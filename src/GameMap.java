@@ -6,6 +6,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 class GameMap extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
@@ -13,7 +14,7 @@ class GameMap extends JPanel implements KeyListener {
     private Image tileset;
 
     private final GameFrame parentFrame;
-    private int playerX = 1, playerY = 1;
+    private int playerX = 6, playerY = 2;
     private int offsetX = 0, offsetY = 0;
     private Image nyxSprite;
     private boolean isAnimating = false;
@@ -26,9 +27,6 @@ class GameMap extends JPanel implements KeyListener {
 
     private int cameraX = 0;
     private int cameraY = 0;
-
-    // private final int VIEWPORT_WIDTH = 480;
-// private final int VIEWPORT_HEIGHT = 360;
 
     public GameMap(GameFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -170,7 +168,6 @@ class GameMap extends JPanel implements KeyListener {
             case 'd' -> dx[0] = 1;
         }
 
-// Blochează deplasarea dacă e la margine
         if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) {
             dx[0] = 0;
         }
@@ -189,12 +186,19 @@ class GameMap extends JPanel implements KeyListener {
 
         boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
-        boolean possible = (layer1[newY][newX] == 17 || layer2[newY][newX] == 47  || layer2[newY][newX] == 39 ||
-                layer1[newY][newX]==2 || layer2[newY][newX] == 111 || layer2[newY][newX] == 119)
-                || (layer1[newY][newX]==2 && (layer2[newY][newX] == 111 || layer2[newY][newX] == 119));
 
-        if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length && inBounds && possible)
-        {
+        boolean possible = false;
+        if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
+            int tile1 = layer1[newY][newX];
+            int tile2 = layer2[newY][newX];
+
+            boolean baseWalkable = tile1 == 2 || tile1 == 17 || tile2 == 39 || tile2 == 47;
+            boolean specialWalkable = tile2 == 111 || tile2 == 119;
+
+            possible = baseWalkable || specialWalkable;
+        }
+
+        if (inBounds && possible) {
             isAnimating = true;
             int steps = 2;
             int stepSize = TILE_SIZE / steps;
