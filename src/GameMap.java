@@ -2,21 +2,20 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 class GameMap extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
     private final int TILES_PER_ROW = 8;
     private Image tileset;
 
-    private final GameFrame parentFrame;
+    private final JFrame parentFrame;
     private int playerX = 6, playerY = 2;
     private int offsetX = 0, offsetY = 0;
-    private Image nyxSprite;
     private boolean isAnimating = false;
 
     private PauseMenuPanel pauseMenu;
@@ -28,18 +27,41 @@ class GameMap extends JPanel implements KeyListener {
     private int cameraX = 0;
     private int cameraY = 0;
 
-    public GameMap(GameFrame parentFrame) {
+    private static final int STATE_IDLE = 0;
+    private static final int STATE_RUN = 1;
+    private int state = STATE_IDLE;
+
+    private Image[] idleFrames;
+    private Image[] runFrames;
+    private int currentFrame = 0;
+    private Timer animationTimer;
+    private final int FRAME_WIDTH = 200;
+    private final int FRAME_HEIGHT = 200;
+    private final int IDLE_FRAMES = 4;
+    private final int RUN_FRAMES = 8;
+
+    private Rectangle hitbox;
+    private final int HITBOX_WIDTH = 24;
+    private final int HITBOX_HEIGHT = 24;
+    private final int HITBOX_OFFSET_X = 4;
+    private final int HITBOX_OFFSET_Y = 8;
+
+    public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
         tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
         layer1 = loadCSV("assets/maps/harta_principala._Tile Layer 1.csv");
         layer2 = loadCSV("assets/maps/harta_principala._Tile Layer 2.csv");
 
-        try {
-            nyxSprite = new ImageIcon("assets/sprites/nyx_sprite.png").getImage();
-        } catch (Exception e) {
-            System.out.println("Nyx sprite not found.");
-        }
+        loadPlayerSprites();
+        startAnimation();
+
+        hitbox = new Rectangle(
+                playerX * TILE_SIZE + HITBOX_OFFSET_X,
+                playerY * TILE_SIZE + HITBOX_OFFSET_Y,
+                HITBOX_WIDTH,
+                HITBOX_HEIGHT
+        );
 
         setLayout(null);
         setFocusable(true);
@@ -52,9 +74,43 @@ class GameMap extends JPanel implements KeyListener {
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
-        pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+        pauseMenu.setBounds(0, 0, 800, 600);
         pauseMenu.setVisible(false);
         add(pauseMenu);
+    }
+
+    private void loadPlayerSprites() {
+        try {
+            BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/Idle.png"));
+            BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/Run.png"));
+
+            idleFrames = new Image[IDLE_FRAMES];
+            runFrames = new Image[RUN_FRAMES];
+
+            for (int i = 0; i < IDLE_FRAMES; i++) {
+                BufferedImage frame = idleSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
+                idleFrames[i] = frame.getScaledInstance(50, 80, Image.SCALE_SMOOTH);
+            }
+
+            for (int i = 0; i < RUN_FRAMES; i++) {
+                BufferedImage frame = runSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
+                runFrames[i] = frame.getScaledInstance(50, 80, Image.SCALE_SMOOTH);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Eroare la încărcarea sprite-urilor ninja:");
+            e.printStackTrace();
+        }
+    }
+
+    private void startAnimation() {
+        animationTimer = new Timer(120, e -> {
+            currentFrame++;
+            if (state == STATE_IDLE) currentFrame %= IDLE_FRAMES;
+            else currentFrame %= RUN_FRAMES;
+            repaint();
+        });
+        animationTimer.start();
     }
 
     private int[][] loadCSV(String path) {
@@ -79,6 +135,8 @@ class GameMap extends JPanel implements KeyListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
+        updateCamera();
+
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, getWidth(), getHeight());
 
@@ -88,17 +146,24 @@ class GameMap extends JPanel implements KeyListener {
         drawLayer(g2d, layer1);
         drawLayer(g2d, layer2);
 
-        if (nyxSprite != null) {
-            int mapWidth = layer1[0].length * TILE_SIZE;
-            int mapHeight = layer1.length * TILE_SIZE;
+        int spriteWidth = 50;
+        int spriteHeight = 80;
 
-            int drawX = playerX * TILE_SIZE + offsetX;
-            int drawY = playerY * TILE_SIZE + offsetY;
+        int drawX = playerX * TILE_SIZE + offsetX + (TILE_SIZE - spriteWidth) / 2;
+        int drawY = playerY * TILE_SIZE + offsetY + (TILE_SIZE - spriteHeight) / 2;
 
-            if (drawX >= 0 && drawX + TILE_SIZE <= mapWidth && drawY >= 0 && drawY + TILE_SIZE <= mapHeight) {
-                g2d.drawImage(nyxSprite, drawX, drawY, TILE_SIZE, TILE_SIZE, this);
-            }
+        if (state == STATE_IDLE && idleFrames != null && idleFrames[currentFrame] != null)
+            g2d.drawImage(idleFrames[currentFrame], drawX, drawY, this);
+        else if (state == STATE_RUN && runFrames != null && runFrames[currentFrame] != null)
+            g2d.drawImage(runFrames[currentFrame], drawX, drawY, this);
+        else {
+            g2d.setColor(Color.RED);
+            g2d.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
         }
+
+        // Draw hitbox for debugging
+        g2d.setColor(Color.GREEN);
+        g2d.draw(hitbox);
 
         g2d.dispose();
     }
@@ -123,8 +188,8 @@ class GameMap extends JPanel implements KeyListener {
         int mapWidth = layer1[0].length * TILE_SIZE;
         int mapHeight = layer1.length * TILE_SIZE;
 
-        int viewportWidth = getWidth();
-        int viewportHeight = getHeight();
+        int viewportWidth = parentFrame.getContentPane().getWidth();
+        int viewportHeight = parentFrame.getContentPane().getHeight();
 
         cameraX = playerX * TILE_SIZE + offsetX - viewportWidth / 2 + TILE_SIZE / 2;
         cameraY = playerY * TILE_SIZE + offsetY - viewportHeight / 2 + TILE_SIZE / 2;
@@ -168,12 +233,11 @@ class GameMap extends JPanel implements KeyListener {
             case 'd' -> dx[0] = 1;
         }
 
-        if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) {
-            dx[0] = 0;
-        }
-        if ((playerY == 0 && dy[0] == -1) || (playerY == layer1.length - 1 && dy[0] == 1)) {
-            dy[0] = 0;
-        }
+        if (dx[0] != 0 || dy[0] != 0) state = STATE_RUN;
+        else state = STATE_IDLE;
+
+        if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) dx[0] = 0;
+        if ((playerY == 0 && playerY == layer1.length - 1 && dy[0] == 1)) dy[0] = 0;
 
         int newX = playerX + dx[0];
         int newY = playerY + dy[0];
@@ -217,12 +281,16 @@ class GameMap extends JPanel implements KeyListener {
                     offsetY = 0;
                     isAnimating = false;
                     updateCamera();
+                    hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
+                    hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
                     repaint();
                 }
             });
             offsetX = dx[0] * TILE_SIZE;
             offsetY = dy[0] * TILE_SIZE;
             timer.start();
+        } else {
+            state = STATE_IDLE;
         }
     }
 
