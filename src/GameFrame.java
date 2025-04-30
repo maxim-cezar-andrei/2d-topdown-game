@@ -8,16 +8,15 @@ class GameFrame extends JFrame {
 
         GameMap gameMap = new GameMap(this);
 
-        // Setăm culoarea de fundal ca să nu mai apară spațiul gri/alb
 
         setContentPane(gameMap);
 
         setUndecorated(false);
         pack();                    // Ajustează fereastra după dimensiunea hărții
-        setResizable(false);       // Nu permitem redimensionarea
+        setResizable(true);       //  Permitem redimensionarea
         setLocationRelativeTo(null); // Centrează pe ecran
         setVisible(true);
-        setSize(736,576);
+        setSize(getWidth(),getHeight());
         if (withFadeIn) {
             FadePanel fade = new FadePanel();
             fade.setBounds(0, 0, getWidth(), getHeight());

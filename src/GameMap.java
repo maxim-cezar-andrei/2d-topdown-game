@@ -1,12 +1,11 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Scanner;
-import java.io.File;
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 class GameMap extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
@@ -24,6 +23,12 @@ class GameMap extends JPanel implements KeyListener {
 
     private int[][] layer1;
     private int[][] layer2;
+
+    private int cameraX = 0;
+    private int cameraY = 0;
+
+    // private final int VIEWPORT_WIDTH = 480;
+// private final int VIEWPORT_HEIGHT = 360;
 
     public GameMap(GameFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -43,14 +48,13 @@ class GameMap extends JPanel implements KeyListener {
         requestFocusInWindow();
         addKeyListener(this);
 
-        // Inițializare meniului de pauză
         pauseMenu = new PauseMenuPanel(
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> { JOptionPane.showMessageDialog(this, "Load not implemented yet."); },
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
-        pauseMenu.setBounds(0, 0, 736, 576);
+        pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
         add(pauseMenu);
     }
@@ -77,12 +81,28 @@ class GameMap extends JPanel implements KeyListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        drawLayer(g, layer1);
-        drawLayer(g, layer2);
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.translate(-cameraX, -cameraY);
+
+        drawLayer(g2d, layer1);
+        drawLayer(g2d, layer2);
 
         if (nyxSprite != null) {
-            g.drawImage(nyxSprite, playerX * TILE_SIZE + offsetX, playerY * TILE_SIZE + offsetY, TILE_SIZE, TILE_SIZE, this);
+            int mapWidth = layer1[0].length * TILE_SIZE;
+            int mapHeight = layer1.length * TILE_SIZE;
+
+            int drawX = playerX * TILE_SIZE + offsetX;
+            int drawY = playerY * TILE_SIZE + offsetY;
+
+            if (drawX >= 0 && drawX + TILE_SIZE <= mapWidth && drawY >= 0 && drawY + TILE_SIZE <= mapHeight) {
+                g2d.drawImage(nyxSprite, drawX, drawY, TILE_SIZE, TILE_SIZE, this);
+            }
         }
+
+        g2d.dispose();
     }
 
     private void drawLayer(Graphics g, int[][] layer) {
@@ -101,6 +121,20 @@ class GameMap extends JPanel implements KeyListener {
         }
     }
 
+    private void updateCamera() {
+        int mapWidth = layer1[0].length * TILE_SIZE;
+        int mapHeight = layer1.length * TILE_SIZE;
+
+        int viewportWidth = getWidth();
+        int viewportHeight = getHeight();
+
+        cameraX = playerX * TILE_SIZE + offsetX - viewportWidth / 2 + TILE_SIZE / 2;
+        cameraY = playerY * TILE_SIZE + offsetY - viewportHeight / 2 + TILE_SIZE / 2;
+
+        cameraX = Math.max(0, Math.min(cameraX, mapWidth - viewportWidth));
+        cameraY = Math.max(0, Math.min(cameraY, mapHeight - viewportHeight));
+    }
+
     @Override
     public Dimension getPreferredSize() {
         return new Dimension(layer1[0].length * TILE_SIZE, layer1.length * TILE_SIZE);
@@ -116,18 +150,19 @@ class GameMap extends JPanel implements KeyListener {
             pauseMenu.setVisible(menuVisible);
 
             if (menuVisible) {
-                pauseMenu.requestFocusInWindow();  // Asigură focus pe meniu
+                pauseMenu.requestFocusInWindow();
             } else {
-                requestFocusInWindow();  // Revenim cu focus pe hartă
+                requestFocusInWindow();
             }
 
-            repaint();  // Actualizăm vizual componenta
+            repaint();
             return;
         }
 
         if (isAnimating || menuVisible) return;
 
         final int[] dx = {0}, dy = {0};
+
         switch (e.getKeyChar()) {
             case 'w' -> dy[0] = -1;
             case 's' -> dy[0] = 1;
@@ -135,10 +170,31 @@ class GameMap extends JPanel implements KeyListener {
             case 'd' -> dx[0] = 1;
         }
 
+// Blochează deplasarea dacă e la margine
+        if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) {
+            dx[0] = 0;
+        }
+        if ((playerY == 0 && dy[0] == -1) || (playerY == layer1.length - 1 && dy[0] == 1)) {
+            dy[0] = 0;
+        }
+
         int newX = playerX + dx[0];
         int newY = playerY + dy[0];
 
-        if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
+        int mapWidth = layer1[0].length * TILE_SIZE;
+        int mapHeight = layer1.length * TILE_SIZE;
+
+        int futureDrawX = newX * TILE_SIZE;
+        int futureDrawY = newY * TILE_SIZE;
+
+        boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
+                futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
+        boolean possible = (layer1[newY][newX] == 17 || layer2[newY][newX] == 47  || layer2[newY][newX] == 39 ||
+                layer1[newY][newX]==2 || layer2[newY][newX] == 111 || layer2[newY][newX] == 119)
+                || (layer1[newY][newX]==2 && (layer2[newY][newX] == 111 || layer2[newY][newX] == 119));
+
+        if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length && inBounds && possible)
+        {
             isAnimating = true;
             int steps = 2;
             int stepSize = TILE_SIZE / steps;
@@ -156,6 +212,7 @@ class GameMap extends JPanel implements KeyListener {
                     offsetX = 0;
                     offsetY = 0;
                     isAnimating = false;
+                    updateCamera();
                     repaint();
                 }
             });
