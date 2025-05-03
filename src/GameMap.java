@@ -46,6 +46,8 @@ class GameMap extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
+    private boolean wPressed, aPressed, sPressed, dPressed;
+
     public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
@@ -208,15 +210,19 @@ class GameMap extends JPanel implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
             menuVisible = !menuVisible;
             pauseMenu.setVisible(menuVisible);
 
-            if (menuVisible) {
+            if (menuVisible)
+            {
                 pauseMenu.requestFocusInWindow();
-            } else {
-                requestFocusInWindow();
             }
+            else
+                {
+                    requestFocusInWindow();
+                }
 
             repaint();
             return;
@@ -227,14 +233,31 @@ class GameMap extends JPanel implements KeyListener {
         final int[] dx = {0}, dy = {0};
 
         switch (e.getKeyChar()) {
-            case 'w' -> dy[0] = -1;
-            case 's' -> dy[0] = 1;
-            case 'a' -> dx[0] = -1;
-            case 'd' -> dx[0] = 1;
+            case 'w' ->{
+                dy[0] = -1;
+                wPressed = true;
+            }
+            case 's' -> {
+                dy[0] = 1;
+                sPressed = true;
+            }
+            case 'a' -> {
+                dx[0] = -1;
+                aPressed = true;
+            }
+            case 'd' ->{
+                dx[0] = 1;
+                dPressed = true;
+            }
         }
 
-        if (dx[0] != 0 || dy[0] != 0) state = STATE_RUN;
-        else state = STATE_IDLE;
+        /*
+        if (dx[0] != 0 || dy[0] != 0)
+            state = STATE_RUN;
+        else
+            state = STATE_IDLE;
+        */
+        state = STATE_RUN;
 
         if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) dx[0] = 0;
         if ((playerY == 0 && playerY == layer1.length - 1 && dy[0] == 1)) dy[0] = 0;
@@ -295,5 +318,15 @@ class GameMap extends JPanel implements KeyListener {
     }
 
     @Override
-    public void keyReleased(KeyEvent e) {}
+    public void keyReleased(KeyEvent e)
+    {
+        switch (e.getKeyChar()) {
+            case 's' -> sPressed = false;
+            case 'a' -> aPressed = false;
+            case 'd' -> dPressed = false;
+            case 'w' -> wPressed = false;
+        }
+        if(!wPressed && !sPressed && !aPressed && !dPressed)
+            state = STATE_IDLE;
+    }
 }
