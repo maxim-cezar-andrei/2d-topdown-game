@@ -10,15 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-class GameMap extends JPanel implements KeyListener {
+class GameMap2 extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
-    private final int TILES_PER_ROW = 8;
+    private final int TILES_PER_ROW = 74;
     private Image tileset;
 
     private final JFrame parentFrame;
     private int playerX = 6, playerY = 2;
     private int offsetX = 0, offsetY = 0;
     private boolean isAnimating = false;
+
+    private final int RETURN_TRIGGER_X = 6;
+    private final int RETURN_TRIGGER_Y = 2;
+    private boolean showReturnMessage = false;
 
     private PauseMenuPanel pauseMenu;
     private boolean menuVisible = false;
@@ -55,12 +59,12 @@ class GameMap extends JPanel implements KeyListener {
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
 
-    public GameMap(JFrame parentFrame) {
+    public GameMap2(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
-        tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
-        layer1 = loadCSV("assets/maps/harta_principala._Tile Layer 1.csv");
-        layer2 = loadCSV("assets/maps/harta_principala._Tile Layer 2.csv");
+        tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
+        layer1 = loadCSV("assets/maps/laboratory3_Tile Layer 1.csv");
+        layer2 = loadCSV("assets/maps/laboratory3_Tile Layer 2.csv");
 
         loadPlayerSprites();
         startAnimation();
@@ -193,6 +197,13 @@ class GameMap extends JPanel implements KeyListener {
         g2d.setColor(Color.GREEN);
         g2d.draw(hitbox);
 
+        if (showReturnMessage) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press E to return to the main map", cameraX + 50, cameraY + 50);
+        }
+
+
         if (showLevel1Message) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
@@ -260,27 +271,9 @@ class GameMap extends JPanel implements KeyListener {
         }
 
         if (e.getKeyChar() == 'e' && showLevel1Message) {
-            System.out.println("Trigger E activated!");
-            System.out.println("parentFrame = " + parentFrame);
-
-            GameMap2 gameMap2 = new GameMap2(parentFrame);
-            gameMap2.setFocusable(true);
-            gameMap2.requestFocusInWindow();
-
-            parentFrame.setContentPane(gameMap2); // <- folosește setContentPane, nu add
-            parentFrame.revalidate();
-            parentFrame.pack(); // important pentru getPreferredSize()
-            parentFrame.repaint();
+            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
             return;
         }
-
-
-
-
-//        if (e.getKeyChar() == 'e' && showLevel1Message) {
-//            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
-//            return;
-//        }
 
         if (isAnimating || menuVisible) return;
 
@@ -357,6 +350,7 @@ class GameMap extends JPanel implements KeyListener {
                     timer.stop();
                     playerX = newX;
                     playerY = newY;
+                    showReturnMessage = (playerX == RETURN_TRIGGER_X && playerY == RETURN_TRIGGER_Y);
                     offsetX = 0;
                     offsetY = 0;
                     isAnimating = false;
