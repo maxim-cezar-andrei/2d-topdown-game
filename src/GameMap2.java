@@ -28,7 +28,6 @@ class GameMap2 extends JPanel implements KeyListener {
     private boolean menuVisible = false;
 
     private int[][] layer1;
-    private int[][] layer2;
 
     private int cameraX = 0;
     private int cameraY = 0;
@@ -63,8 +62,8 @@ class GameMap2 extends JPanel implements KeyListener {
         this.parentFrame = parentFrame;
 
         tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
-        layer1 = loadCSV("assets/maps/laboratory3_Tile Layer 1.csv");
-        layer2 = loadCSV("assets/maps/laboratory3_Tile Layer 2.csv");
+        layer1 = loadCSV("assets/maps/nivel2.csv");
+
 
         loadPlayerSprites();
         startAnimation();
@@ -208,19 +207,19 @@ class GameMap2 extends JPanel implements KeyListener {
         boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
 
-        boolean possible = false;
+        //boolean possible = false;
         boolean baseWalkable = false;
         if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
             int tile1 = layer1[newY][newX];
-            int tile2 = layer2[newY][newX];
 
-            baseWalkable = tile1 == 214;
-            boolean specialWalkable = tile2 == -1;
 
-            possible = baseWalkable && specialWalkable;
+            baseWalkable = tile1 == 225;
+
+
+            //possible = baseWalkable && specialWalkable;
         }
 
-        if (inBounds && possible) {
+        if (inBounds && baseWalkable) {
             isAnimating = true;
             int steps = 4;
             int stepSize = TILE_SIZE / steps;
@@ -294,7 +293,7 @@ class GameMap2 extends JPanel implements KeyListener {
         g2d.translate(-cameraX, -cameraY);
 
         drawLayer(g2d, layer1);
-        drawLayer(g2d, layer2);
+
 
         int spriteWidth = 150;
         int spriteHeight = 150;
