@@ -46,9 +46,9 @@ class GameMap extends JPanel implements KeyListener {
 
     private Rectangle hitbox;
     private final int HITBOX_WIDTH = 30;
-    private final int HITBOX_HEIGHT =38;
+    private final int HITBOX_HEIGHT =36;
     private final int HITBOX_OFFSET_X = 4;
-    private final int HITBOX_OFFSET_Y = 8;
+    private final int HITBOX_OFFSET_Y = 2;
 
     private final int LEVEL1_TRIGGER_X =22;
     private final int LEVEL1_TRIGGER_Y = 5;
