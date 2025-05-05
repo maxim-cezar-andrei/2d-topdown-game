@@ -52,9 +52,9 @@ class GameMap2 extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
-    private final int LEVEL1_TRIGGER_X = 1;
-    private final int LEVEL1_TRIGGER_Y = 9;
-    private boolean showLevel1Message = false;
+    private final int LEVEL2_TRIGGER_X = 1;
+    private final int LEVEL2_TRIGGER_Y = 9;
+    private boolean showLevel2Message = false;
 
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
@@ -141,6 +141,127 @@ class GameMap2 extends JPanel implements KeyListener {
         return op.filter(original, null);
     }
 
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+        {
+            menuVisible = !menuVisible;
+            pauseMenu.setVisible(menuVisible);
+
+            if (menuVisible)
+            {
+                pauseMenu.requestFocusInWindow();
+            }
+            else
+            {
+                requestFocusInWindow();
+            }
+
+            repaint();
+            return;
+        }
+
+        if (e.getKeyChar() == '2' && showLevel2Message) {
+            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
+            return;
+        }
+
+        if (isAnimating || menuVisible) return;
+
+        final int[] dx = {0}, dy = {0};
+
+        switch (e.getKeyChar()) {
+            case 'w' ->{
+                dy[0] = -1;
+                wPressed = true;
+            }
+            case 's' -> {
+                dy[0] = 1;
+                sPressed = true;
+            }
+            case 'a' -> {
+                dx[0] = -1;
+                aPressed = true;
+                facingRight = false;
+            }
+            case 'd' ->{
+                dx[0] = 1;
+                dPressed = true;
+                facingRight = true;
+            }
+        }
+
+        state = STATE_RUN;
+
+        if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) dx[0] = 0;
+        if ((playerY == 0 && playerY == layer1.length - 1 && dy[0] == 1)) dy[0] = 0;
+
+        int newX = playerX + dx[0];
+        int newY = playerY + dy[0];
+
+        int mapWidth = layer1[0].length * TILE_SIZE;
+        int mapHeight = layer1.length * TILE_SIZE;
+
+        int futureDrawX = newX * TILE_SIZE;
+        int futureDrawY = newY * TILE_SIZE;
+
+        boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
+                futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
+
+        boolean possible = false;
+        boolean baseWalkable = false;
+        if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
+            int tile1 = layer1[newY][newX];
+            int tile2 = layer2[newY][newX];
+
+            baseWalkable = tile1 == 214;
+            boolean specialWalkable = tile2 == -1;
+
+            possible = baseWalkable || specialWalkable;
+        }
+
+        if (inBounds && possible) {
+            isAnimating = true;
+            int steps = 4;
+            int stepSize = TILE_SIZE / steps;
+            Timer timer = new Timer(10, null);
+            final int[] count = {0};
+            int totalOffsetX = dx[0] * TILE_SIZE;
+            int totalOffsetY = dy[0] * TILE_SIZE;
+
+            timer.addActionListener(evt -> {
+//                offsetX -= dx[0] * stepSize;
+//                offsetY -= dy[0] * stepSize;
+                offsetX = totalOffsetX - (totalOffsetX * count[0] / steps);
+                offsetY = totalOffsetY - (totalOffsetY * count[0] / steps);
+
+                repaint();
+                count[0]++;
+
+                if (count[0] >= steps) {
+                    timer.stop();
+                    playerX = newX;
+                    playerY = newY;
+                    showReturnMessage = (playerX == RETURN_TRIGGER_X && playerY == RETURN_TRIGGER_Y);
+                    offsetX = 0;
+                    offsetY = 0;
+                    isAnimating = false;
+                    updateCamera();
+                    hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
+                    hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
+
+                    showLevel2Message = (playerX == LEVEL2_TRIGGER_X && playerY == LEVEL2_TRIGGER_Y);
+
+                    repaint();
+                }
+            });
+            offsetX = dx[0] * TILE_SIZE;
+            offsetY = dy[0] * TILE_SIZE;
+            timer.start();
+        } else {
+            state = STATE_IDLE;
+        }
+    }
+
     private int[][] loadCSV(String path) {
         List<int[]> rows = new ArrayList<>();
         try (Scanner scanner = new Scanner(new File(path))) {
@@ -203,11 +324,10 @@ class GameMap2 extends JPanel implements KeyListener {
             g2d.drawString("Press E to return to the main map", cameraX + 50, cameraY + 50);
         }
 
-
-        if (showLevel1Message) {
+        if (showLevel2Message) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press E if you want to enter level 1", cameraX + 50, cameraY + 50);
+            g2d.drawString("Press 2 if you want to enter level 2", cameraX + 50, cameraY + 50);
         }
         g2d.dispose();
     }
@@ -251,137 +371,14 @@ class GameMap2 extends JPanel implements KeyListener {
     public void keyTyped(KeyEvent e) {}
 
     @Override
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-        {
-            menuVisible = !menuVisible;
-            pauseMenu.setVisible(menuVisible);
-
-            if (menuVisible)
-            {
-                pauseMenu.requestFocusInWindow();
-            }
-            else
-            {
-                requestFocusInWindow();
-            }
-
-            repaint();
-            return;
-        }
-
-        if (e.getKeyChar() == 'e' && showLevel1Message) {
-            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
-            return;
-        }
-
-        if (isAnimating || menuVisible) return;
-
-        final int[] dx = {0}, dy = {0};
-
-        switch (e.getKeyChar()) {
-            case 'w' ->{
-                dy[0] = -1;
-                wPressed = true;
-            }
-            case 's' -> {
-                dy[0] = 1;
-                sPressed = true;
-            }
-            case 'a' -> {
-                dx[0] = -1;
-                aPressed = true;
-                facingRight = false;
-            }
-            case 'd' ->{
-                dx[0] = 1;
-                dPressed = true;
-                facingRight = true;
-            }
-        }
-
-        state = STATE_RUN;
-
-        if ((playerX == 0 && dx[0] == -1) || (playerX == layer1[0].length - 1 && dx[0] == 1)) dx[0] = 0;
-        if ((playerY == 0 && playerY == layer1.length - 1 && dy[0] == 1)) dy[0] = 0;
-
-        int newX = playerX + dx[0];
-        int newY = playerY + dy[0];
-
-        int mapWidth = layer1[0].length * TILE_SIZE;
-        int mapHeight = layer1.length * TILE_SIZE;
-
-        int futureDrawX = newX * TILE_SIZE;
-        int futureDrawY = newY * TILE_SIZE;
-
-        boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
-                futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
-
-        boolean possible = false;
-        boolean baseWalkable = false;
-        if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
-            int tile1 = layer1[newY][newX];
-            int tile2 = layer2[newY][newX];
-
-            baseWalkable = tile1 == 214 ;
-            //boolean specialWalkable = tile2 == 111 || tile2 == 119;
-
-            //possible = baseWalkable || specialWalkable;
-        }
-
-        if (inBounds && baseWalkable) {
-            isAnimating = true;
-            int steps = 4;
-            int stepSize = TILE_SIZE / steps;
-            Timer timer = new Timer(10, null);
-            final int[] count = {0};
-            int totalOffsetX = dx[0] * TILE_SIZE;
-            int totalOffsetY = dy[0] * TILE_SIZE;
-
-            timer.addActionListener(evt -> {
-//                offsetX -= dx[0] * stepSize;
-//                offsetY -= dy[0] * stepSize;
-                offsetX = totalOffsetX - (totalOffsetX * count[0] / steps);
-                offsetY = totalOffsetY - (totalOffsetY * count[0] / steps);
-
-                repaint();
-                count[0]++;
-
-                if (count[0] >= steps) {
-                    timer.stop();
-                    playerX = newX;
-                    playerY = newY;
-                    showReturnMessage = (playerX == RETURN_TRIGGER_X && playerY == RETURN_TRIGGER_Y);
-                    offsetX = 0;
-                    offsetY = 0;
-                    isAnimating = false;
-                    updateCamera();
-                    hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
-                    hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
-
-                    showLevel1Message = (playerX == LEVEL1_TRIGGER_X && playerY == LEVEL1_TRIGGER_Y);
-
-                    repaint();
-                }
-            });
-            offsetX = dx[0] * TILE_SIZE;
-            offsetY = dy[0] * TILE_SIZE;
-            timer.start();
-        } else {
-            state = STATE_IDLE;
-        }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e)
-    {
+    public void keyReleased(KeyEvent e) {
         switch (e.getKeyChar()) {
             case 's' -> sPressed = false;
             case 'a' -> aPressed = false;
             case 'd' -> dPressed = false;
             case 'w' -> wPressed = false;
         }
-        if(!wPressed && !sPressed && !aPressed && !dPressed)
+        if (!wPressed && !sPressed && !aPressed && !dPressed)
             state = STATE_IDLE;
     }
 }

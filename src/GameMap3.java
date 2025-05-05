@@ -51,9 +51,9 @@ class GameMap3 extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
-    private final int LEVEL2_TRIGGER_X = 22;
-    private final int LEVEL2_TRIGGER_Y = 5;
-    private boolean showLevel2Message = false;
+    private final int LEVEL1_TRIGGER_X = 22;
+    private final int LEVEL1_TRIGGER_Y = 5;
+    private boolean showLevel1Message = false;
 
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
@@ -201,7 +201,7 @@ class GameMap3 extends JPanel implements KeyListener {
         }
 
 
-        if (showLevel2Message) {
+        if (showLevel1Message) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
             g2d.drawString("Press 1 if you want to enter level 1", cameraX + 50, cameraY + 50);
@@ -267,7 +267,7 @@ class GameMap3 extends JPanel implements KeyListener {
             return;
         }
 
-        if (e.getKeyChar() == 'e' && showLevel2Message) {
+        if (e.getKeyChar() == 'e' && showLevel1Message) {
             JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
             return;
         }
@@ -355,7 +355,7 @@ class GameMap3 extends JPanel implements KeyListener {
                     hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
                     hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
 
-                    showLevel2Message = (playerX == LEVEL2_TRIGGER_X && playerY == LEVEL2_TRIGGER_Y);
+                    showLevel1Message = (playerX == LEVEL1_TRIGGER_X && playerY == LEVEL1_TRIGGER_Y);
 
                     repaint();
                 }

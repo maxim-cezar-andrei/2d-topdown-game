@@ -48,13 +48,15 @@ class GameMap extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
-    private final int LEVEL1_TRIGGER_X = 1;
-    private final int LEVEL1_TRIGGER_Y = 9;
+    private final int LEVEL1_TRIGGER_X =22;
+    private final int LEVEL1_TRIGGER_Y = 5;
     private boolean showLevel1Message = false;
 
-    private final int LEVEL2_TRIGGER_X =22;
-    private final int LEVEL2_TRIGGER_Y = 5;
+    private final int LEVEL2_TRIGGER_X = 1;
+    private final int LEVEL2_TRIGGER_Y = 9;
     private boolean showLevel2Message = false;
+
+
 
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
@@ -197,17 +199,19 @@ class GameMap extends JPanel implements KeyListener {
         g2d.setColor(Color.GREEN);
         g2d.draw(hitbox);
 
-        if (showLevel1Message) {
-            g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press E if you want to enter level 2", cameraX + 50, cameraY + 50);
-        }
 
-        if (showLevel2Message) {
+        if (showLevel1Message) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
             g2d.drawString("Press 1 if you want to enter level 1", cameraX + 50, cameraY + 50);
         }
+        if (showLevel2Message) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press 2 if you want to enter level 2", cameraX + 50, cameraY + 50);
+        }
+
+
         g2d.dispose();
     }
 
@@ -269,22 +273,8 @@ class GameMap extends JPanel implements KeyListener {
             return;
         }
 
-        if (e.getKeyChar() == 'e' && showLevel1Message) {
-            System.out.println("Trigger E activated!");
-            System.out.println("parentFrame = " + parentFrame);
 
-            GameMap2 gameMap2 = new GameMap2(parentFrame);
-            gameMap2.setFocusable(true);
-            gameMap2.requestFocusInWindow();
-
-            parentFrame.setContentPane(gameMap2); // <- folosește setContentPane, nu add
-            parentFrame.revalidate();
-            parentFrame.pack(); // important pentru getPreferredSize()
-            parentFrame.repaint();
-            return;
-        }
-
-        if (e.getKeyChar() == '1' && showLevel2Message) {
+        if (e.getKeyChar() == '1' && showLevel1Message) {
             System.out.println("Trigger 1 activated!");
             System.out.println("parentFrame = " + parentFrame);
 
@@ -296,10 +286,27 @@ class GameMap extends JPanel implements KeyListener {
             parentFrame.revalidate();
             parentFrame.pack(); // important pentru getPreferredSize()
             parentFrame.repaint();
+            SwingUtilities.invokeLater(gameMap3::requestFocusInWindow);
+
             return;
         }
 
 
+        if (e.getKeyChar() == '2' && showLevel2Message) {
+            System.out.println("Trigger E activated!");
+            System.out.println("parentFrame = " + parentFrame);
+
+            GameMap2 gameMap2 = new GameMap2(parentFrame);
+            gameMap2.setFocusable(true);
+            gameMap2.requestFocusInWindow();
+
+            parentFrame.setContentPane(gameMap2); // <- folosește setContentPane, nu add
+            parentFrame.revalidate();
+            parentFrame.pack(); // important pentru getPreferredSize()
+            parentFrame.repaint();
+            SwingUtilities.invokeLater(gameMap2::requestFocusInWindow);
+            return;
+        }
 
 
 //        if (e.getKeyChar() == 'e' && showLevel1Message) {
