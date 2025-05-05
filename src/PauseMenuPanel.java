@@ -52,6 +52,16 @@ public class PauseMenuPanel extends JPanel {
             }
         });
 
+
         return button;
     }
+    protected void paintComponent(Graphics g) {
+        // Desenează fundal semi-transparent
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setColor(new Color(0, 0, 0, 150)); // negru cu transparență
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+        g2d.dispose();
+        super.paintComponent(g); // opțional pentru redare corectă a componentelor
+    }
 }
+

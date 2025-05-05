@@ -1,9 +1,7 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -48,7 +46,7 @@ class GameMap extends JPanel implements KeyListener {
     private final int HITBOX_WIDTH = 30;
     private final int HITBOX_HEIGHT =36;
     private final int HITBOX_OFFSET_X = 4;
-    private final int HITBOX_OFFSET_Y = 2;
+    private final int HITBOX_OFFSET_Y = -4;
 
     private final int LEVEL1_TRIGGER_X =22;
     private final int LEVEL1_TRIGGER_Y = 5;
@@ -66,6 +64,14 @@ class GameMap extends JPanel implements KeyListener {
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
 
+    /// Enemy
+    private List<Enemy> enemies = new ArrayList<>();
+
+    /// Nyx
+    private boolean isAttacking = false;
+    private Image[] attackFrames;
+    private int attackFrameCount = 5;
+
     public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
@@ -75,6 +81,10 @@ class GameMap extends JPanel implements KeyListener {
 
         loadPlayerSprites();
         startAnimation();
+
+        enemies.add(new Enemy(8, 8));
+        enemies.add(new Enemy(6, 9));
+        enemies.add(new Enemy(5, 10));
 
         hitbox = new Rectangle(
                 playerX * TILE_SIZE + HITBOX_OFFSET_X,
@@ -88,14 +98,27 @@ class GameMap extends JPanel implements KeyListener {
         requestFocusInWindow();
         addKeyListener(this);
 
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    isAttacking = true;
+                    currentFrame = 0;
+                }
+            }
+        });
+
+
         pauseMenu = new PauseMenuPanel(
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> { JOptionPane.showMessageDialog(this, "Load not implemented yet."); },
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
+
         pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
+        pauseMenu.setFocusable(false);
         add(pauseMenu);
 
         addComponentListener(new ComponentAdapter() {
@@ -108,20 +131,25 @@ class GameMap extends JPanel implements KeyListener {
 
     private void loadPlayerSprites() {
         try {
-            BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/Idle.png"));
-            BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/Run.png"));
-
+            BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Idle.png"));
+            BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Run.png"));
+            BufferedImage attackSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Attack2.png"));
+            attackFrames = new Image[attackFrameCount];
+            for (int i = 0; i < attackFrameCount; i++) {
+                BufferedImage frame = attackSheet.getSubimage(i * 160, 0, 160, 200); // ajustează 160 dacă e altă lățime
+                attackFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
+            }
             idleFrames = new Image[IDLE_FRAMES];
             runFrames = new Image[RUN_FRAMES];
 
             for (int i = 0; i < IDLE_FRAMES; i++) {
                 BufferedImage frame = idleSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
-                idleFrames[i] = frame.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                idleFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
             }
 
             for (int i = 0; i < RUN_FRAMES; i++) {
                 BufferedImage frame = runSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
-                runFrames[i] = frame.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                runFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
             }
 
         } catch (Exception e) {
@@ -133,11 +161,25 @@ class GameMap extends JPanel implements KeyListener {
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
             currentFrame++;
-            if (state == STATE_IDLE) currentFrame %= IDLE_FRAMES;
-            else currentFrame %= RUN_FRAMES;
+            if (isAttacking) {
+                if (currentFrame >= attackFrameCount) {
+                    isAttacking = false;
+                    currentFrame = 0;
+                }
+            } else {
+                if (state == STATE_IDLE) {
+                    currentFrame %= IDLE_FRAMES;
+                } else if (state == STATE_RUN) {
+                    currentFrame %= RUN_FRAMES;
+                }
+            }
             repaint();
         });
         animationTimer.start();
+
+        for (Enemy enemy : enemies) {
+            enemy.updateAnimation();
+        }
     }
 
     private Image flipImageHorizontally(Image img) {
@@ -195,10 +237,13 @@ class GameMap extends JPanel implements KeyListener {
         int drawY = playerY * TILE_SIZE + offsetY + (TILE_SIZE - spriteHeight) / 2;
 
         Image sprite = null;
-        if (state == STATE_IDLE && idleFrames != null && idleFrames[currentFrame] != null)
-            sprite = idleFrames[currentFrame];
-        else if (state == STATE_RUN && runFrames != null && runFrames[currentFrame] != null)
-            sprite = runFrames[currentFrame];
+        if (isAttacking && attackFrames != null) {
+            sprite = attackFrames[Math.min(currentFrame, attackFrameCount - 1)];
+        } else if (state == STATE_IDLE && idleFrames != null) {
+            sprite = idleFrames[currentFrame % IDLE_FRAMES];
+        } else if (state == STATE_RUN && runFrames != null) {
+            sprite = runFrames[currentFrame % RUN_FRAMES];
+        }
 
         if (sprite != null) {
             if (!facingRight) sprite = flipImageHorizontally(sprite);
@@ -211,6 +256,10 @@ class GameMap extends JPanel implements KeyListener {
         g2d.setColor(Color.GREEN);
         g2d.draw(hitbox);
 
+        for (Enemy enemy : enemies) {
+            enemy.updateAnimation(); // schimbă frame-ul curent
+            enemy.draw((Graphics2D) g2d, TILE_SIZE); // desenează sprite-ul
+        }
 
         if (showLevel1Message) {
             g2d.setColor(Color.WHITE);
@@ -441,6 +490,7 @@ class GameMap extends JPanel implements KeyListener {
             state = STATE_IDLE;
         }
     }
+
 
     @Override
     public void keyReleased(KeyEvent e)

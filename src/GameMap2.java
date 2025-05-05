@@ -48,9 +48,9 @@ class GameMap2 extends JPanel implements KeyListener {
 
     private Rectangle hitbox;
     private final int HITBOX_WIDTH = 24;
-    private final int HITBOX_HEIGHT = 24;
+    private final int HITBOX_HEIGHT = 32;
     private final int HITBOX_OFFSET_X = 4;
-    private final int HITBOX_OFFSET_Y = 8;
+    private final int HITBOX_OFFSET_Y = -2;
 
     private final int LEVEL2_TRIGGER_X = 1;
     private final int LEVEL2_TRIGGER_Y = 9;
@@ -94,20 +94,21 @@ class GameMap2 extends JPanel implements KeyListener {
 
     private void loadPlayerSprites() {
         try {
-            BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/Idle.png"));
-            BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/Run.png"));
+            BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Idle.png"));
+            BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Run.png"));
+
 
             idleFrames = new Image[IDLE_FRAMES];
             runFrames = new Image[RUN_FRAMES];
 
             for (int i = 0; i < IDLE_FRAMES; i++) {
                 BufferedImage frame = idleSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
-                idleFrames[i] = frame.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                idleFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
             }
 
             for (int i = 0; i < RUN_FRAMES; i++) {
                 BufferedImage frame = runSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
-                runFrames[i] = frame.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                runFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
             }
 
         } catch (Exception e) {
