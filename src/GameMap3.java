@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
@@ -51,9 +53,9 @@ class GameMap3 extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
-    private final int LEVEL1_TRIGGER_X = 22;
-    private final int LEVEL1_TRIGGER_Y = 5;
-    private boolean showLevel1Message = false;
+    private final int LEVEL3_TRIGGER_X = 16;
+    private final int LEVEL3_TRIGGER_Y = 9;
+    private boolean showLevel3Message = false;
 
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
@@ -62,7 +64,7 @@ class GameMap3 extends JPanel implements KeyListener {
         this.parentFrame = parentFrame;
 
         tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
-        layer1 = loadCSV("assets/maps/nivel1.csv");
+        layer1 = loadCSV("assets/maps/nivel3.csv");
 
         loadPlayerSprites();
         startAnimation();
@@ -85,9 +87,15 @@ class GameMap3 extends JPanel implements KeyListener {
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
-        pauseMenu.setBounds(0, 0, 800, 600);
+        pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
         add(pauseMenu);
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+            }
+        });
     }
 
     private void loadPlayerSprites() {
@@ -201,10 +209,10 @@ class GameMap3 extends JPanel implements KeyListener {
         }
 
 
-        if (showLevel1Message) {
+        if (showLevel3Message) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press 1 if you want to enter level 1", cameraX + 50, cameraY + 50);
+            g2d.drawString("Press 3 if you want to enter level 3", cameraX + 50, cameraY + 50);
         }
         g2d.dispose();
     }
@@ -267,8 +275,8 @@ class GameMap3 extends JPanel implements KeyListener {
             return;
         }
 
-        if (e.getKeyChar() == 'e' && showLevel1Message) {
-            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
+        if (e.getKeyChar() == 'e' && showLevel3Message) {
+            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 3!");
             return;
         }
 
@@ -322,7 +330,7 @@ class GameMap3 extends JPanel implements KeyListener {
             baseWalkable = tile1 == 1567 || tile1 == 212 || tile1 == 213 || tile1 == 286 || tile1 == 287;
             //boolean specialWalkable = tile2 == 111 || tile2 == 119;
 
-           // possible = baseWalkable || specialWalkable;
+            // possible = baseWalkable || specialWalkable;
         }
 
         if (inBounds && baseWalkable) {
@@ -355,7 +363,7 @@ class GameMap3 extends JPanel implements KeyListener {
                     hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
                     hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
 
-                    showLevel1Message = (playerX == LEVEL1_TRIGGER_X && playerY == LEVEL1_TRIGGER_Y);
+                    showLevel3Message = (playerX == LEVEL3_TRIGGER_X && playerY == LEVEL3_TRIGGER_Y);
 
                     repaint();
                 }

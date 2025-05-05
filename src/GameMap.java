@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
@@ -43,8 +45,8 @@ class GameMap extends JPanel implements KeyListener {
     private final int RUN_FRAMES = 8;
 
     private Rectangle hitbox;
-    private final int HITBOX_WIDTH = 24;
-    private final int HITBOX_HEIGHT = 24;
+    private final int HITBOX_WIDTH = 30;
+    private final int HITBOX_HEIGHT =38;
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
@@ -56,6 +58,9 @@ class GameMap extends JPanel implements KeyListener {
     private final int LEVEL2_TRIGGER_Y = 9;
     private boolean showLevel2Message = false;
 
+    private final int LEVEL3_TRIGGER_X = 9;
+    private final int LEVEL3_TRIGGER_Y = 16;
+    private boolean showLevel3Message = false;
 
 
     private boolean wPressed, aPressed, sPressed, dPressed;
@@ -89,9 +94,16 @@ class GameMap extends JPanel implements KeyListener {
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
-        pauseMenu.setBounds(0, 0, 800, 600);
+        pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
         add(pauseMenu);
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+            }
+        });
     }
 
     private void loadPlayerSprites() {
@@ -211,6 +223,11 @@ class GameMap extends JPanel implements KeyListener {
             g2d.drawString("Press 2 if you want to enter level 2", cameraX + 50, cameraY + 50);
         }
 
+        if (showLevel3Message) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press 3 if you want to enter level 3", cameraX + 50, cameraY + 50);
+        }
 
         g2d.dispose();
     }
@@ -278,15 +295,15 @@ class GameMap extends JPanel implements KeyListener {
             System.out.println("Trigger 1 activated!");
             System.out.println("parentFrame = " + parentFrame);
 
-            GameMap3 gameMap3 = new GameMap3(parentFrame);
-            gameMap3.setFocusable(true);
-            gameMap3.requestFocusInWindow();
+            GameMap1 gameMap1 = new GameMap1(parentFrame);
+            gameMap1.setFocusable(true);
+            gameMap1.requestFocusInWindow();
 
-            parentFrame.setContentPane(gameMap3); // <- folosește setContentPane, nu add
+            parentFrame.setContentPane(gameMap1); // <- folosește setContentPane, nu add
             parentFrame.revalidate();
             parentFrame.pack(); // important pentru getPreferredSize()
             parentFrame.repaint();
-            SwingUtilities.invokeLater(gameMap3::requestFocusInWindow);
+            SwingUtilities.invokeLater(gameMap1::requestFocusInWindow);
 
             return;
         }
@@ -308,7 +325,21 @@ class GameMap extends JPanel implements KeyListener {
             return;
         }
 
+        if (e.getKeyChar() == '3' && showLevel3Message) {
+            System.out.println("Trigger E activated!");
+            System.out.println("parentFrame = " + parentFrame);
 
+            GameMap3 gameMap3 = new GameMap3(parentFrame);
+            gameMap3.setFocusable(true);
+            gameMap3.requestFocusInWindow();
+
+            parentFrame.setContentPane(gameMap3); // <- folosește setContentPane, nu add
+            parentFrame.revalidate();
+            parentFrame.pack(); // important pentru getPreferredSize()
+            parentFrame.repaint();
+            SwingUtilities.invokeLater(gameMap3::requestFocusInWindow);
+            return;
+        }
 //        if (e.getKeyChar() == 'e' && showLevel1Message) {
 //            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
 //            return;
@@ -398,6 +429,7 @@ class GameMap extends JPanel implements KeyListener {
 
                     showLevel1Message = (playerX == LEVEL1_TRIGGER_X && playerY == LEVEL1_TRIGGER_Y);
                     showLevel2Message = (playerX == LEVEL2_TRIGGER_X && playerY == LEVEL2_TRIGGER_Y);
+                    showLevel3Message = (playerX == LEVEL3_TRIGGER_X && playerY == LEVEL3_TRIGGER_Y);
 
                     repaint();
                 }
