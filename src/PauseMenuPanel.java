@@ -3,8 +3,8 @@ import java.awt.*;
 
 public class PauseMenuPanel extends JPanel {
     public PauseMenuPanel(Runnable onMainMenu, Runnable onLoad, Runnable onOptions, Runnable onExit) {
-        setOpaque(true);
-        setBackground(new Color(0, 0, 0, 180));  // Fundal semi-transparent
+        setOpaque(false);
+        //setBackground(new Color(0, 0, 0, 180));  // Fundal semi-transparent
 
         setLayout(new GridBagLayout());  // Centrează conținutul
 
@@ -55,6 +55,7 @@ public class PauseMenuPanel extends JPanel {
 
         return button;
     }
+    @Override
     protected void paintComponent(Graphics g) {
         // Desenează fundal semi-transparent
         Graphics2D g2d = (Graphics2D) g.create();

@@ -31,16 +31,20 @@ class GameMap extends JPanel implements KeyListener {
 
     private static final int STATE_IDLE = 0;
     private static final int STATE_RUN = 1;
+    private static final int STATE_ATTACK = 2;
     private int state = STATE_IDLE;
 
     private Image[] idleFrames;
     private Image[] runFrames;
+    private Image[] attackFrames;
+
     private int currentFrame = 0;
     private Timer animationTimer;
     private final int FRAME_WIDTH = 200;
     private final int FRAME_HEIGHT = 200;
     private final int IDLE_FRAMES = 4;
     private final int RUN_FRAMES = 8;
+    private final int ATTACK_FRAMES = 4;
 
     private Rectangle hitbox;
     private final int HITBOX_WIDTH = 30;
@@ -67,10 +71,7 @@ class GameMap extends JPanel implements KeyListener {
     /// Enemy
     private List<Enemy> enemies = new ArrayList<>();
 
-    /// Nyx
-    private boolean isAttacking = false;
-    private Image[] attackFrames;
-    private int attackFrameCount = 5;
+
 
     public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -102,8 +103,8 @@ class GameMap extends JPanel implements KeyListener {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
-                    isAttacking = true;
                     currentFrame = 0;
+                    state = STATE_ATTACK;
                 }
             }
         });
@@ -134,13 +135,10 @@ class GameMap extends JPanel implements KeyListener {
             BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Idle.png"));
             BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Run.png"));
             BufferedImage attackSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Attack2.png"));
-            attackFrames = new Image[attackFrameCount];
-            for (int i = 0; i < attackFrameCount; i++) {
-                BufferedImage frame = attackSheet.getSubimage(i * 160, 0, 160, 200); // ajustează 160 dacă e altă lățime
-                attackFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
-            }
+
             idleFrames = new Image[IDLE_FRAMES];
             runFrames = new Image[RUN_FRAMES];
+            attackFrames = new Image[ATTACK_FRAMES];
 
             for (int i = 0; i < IDLE_FRAMES; i++) {
                 BufferedImage frame = idleSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
@@ -152,6 +150,11 @@ class GameMap extends JPanel implements KeyListener {
                 runFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
             }
 
+            for (int i = 0; i < ATTACK_FRAMES; i++) {
+                BufferedImage frame = attackSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
+                attackFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
+            }
+
         } catch (Exception e) {
             System.out.println("Eroare la încărcarea sprite-urilor ninja:");
             e.printStackTrace();
@@ -161,16 +164,15 @@ class GameMap extends JPanel implements KeyListener {
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
             currentFrame++;
-            if (isAttacking) {
-                if (currentFrame >= attackFrameCount) {
-                    isAttacking = false;
-                    currentFrame = 0;
-                }
-            } else {
-                if (state == STATE_IDLE) {
-                    currentFrame %= IDLE_FRAMES;
-                } else if (state == STATE_RUN) {
-                    currentFrame %= RUN_FRAMES;
+            switch (state) {
+                case STATE_IDLE -> currentFrame %= IDLE_FRAMES;
+                case STATE_RUN -> currentFrame %= RUN_FRAMES;
+                case STATE_ATTACK ->
+                {
+                    if (currentFrame >= ATTACK_FRAMES) {
+                        currentFrame = 0;
+                        state = (wPressed || aPressed || sPressed || dPressed) ? STATE_RUN : STATE_IDLE;
+                    }
                 }
             }
             repaint();
@@ -237,12 +239,10 @@ class GameMap extends JPanel implements KeyListener {
         int drawY = playerY * TILE_SIZE + offsetY + (TILE_SIZE - spriteHeight) / 2;
 
         Image sprite = null;
-        if (isAttacking && attackFrames != null) {
-            sprite = attackFrames[Math.min(currentFrame, attackFrameCount - 1)];
-        } else if (state == STATE_IDLE && idleFrames != null) {
-            sprite = idleFrames[currentFrame % IDLE_FRAMES];
-        } else if (state == STATE_RUN && runFrames != null) {
-            sprite = runFrames[currentFrame % RUN_FRAMES];
+        switch (state) {
+            case STATE_IDLE -> sprite = idleFrames[currentFrame % IDLE_FRAMES];
+            case STATE_RUN -> sprite = runFrames[currentFrame % RUN_FRAMES];
+            case STATE_ATTACK -> sprite = attackFrames[Math.min(currentFrame, ATTACK_FRAMES - 1)];
         }
 
         if (sprite != null) {
@@ -395,6 +395,7 @@ class GameMap extends JPanel implements KeyListener {
 //        }
 
         if (isAnimating || menuVisible) return;
+        if (state == STATE_ATTACK) return;
 
         final int[] dx = {0}, dy = {0};
 
@@ -501,7 +502,7 @@ class GameMap extends JPanel implements KeyListener {
             case 'd' -> dPressed = false;
             case 'w' -> wPressed = false;
         }
-        if(!wPressed && !sPressed && !aPressed && !dPressed)
+        if(!wPressed && !sPressed && !aPressed && !dPressed && state != STATE_ATTACK)
             state = STATE_IDLE;
     }
 }
