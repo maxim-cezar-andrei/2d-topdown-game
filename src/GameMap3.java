@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-class GameMap extends JPanel implements KeyListener {
+class GameMap3 extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
-    private final int TILES_PER_ROW = 8;
+    private final int TILES_PER_ROW = 74;
     private Image tileset;
 
     private final JFrame parentFrame;
@@ -20,11 +20,14 @@ class GameMap extends JPanel implements KeyListener {
     private int offsetX = 0, offsetY = 0;
     private boolean isAnimating = false;
 
+    private final int RETURN_TRIGGER_X = 6;
+    private final int RETURN_TRIGGER_Y = 2;
+    private boolean showReturnMessage = false;
+
     private PauseMenuPanel pauseMenu;
     private boolean menuVisible = false;
 
     private int[][] layer1;
-    private int[][] layer2;
 
     private int cameraX = 0;
     private int cameraY = 0;
@@ -48,23 +51,18 @@ class GameMap extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = 8;
 
-    private final int LEVEL1_TRIGGER_X = 1;
-    private final int LEVEL1_TRIGGER_Y = 9;
-    private boolean showLevel1Message = false;
-
-    private final int LEVEL2_TRIGGER_X =22;
+    private final int LEVEL2_TRIGGER_X = 22;
     private final int LEVEL2_TRIGGER_Y = 5;
     private boolean showLevel2Message = false;
 
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
 
-    public GameMap(JFrame parentFrame) {
+    public GameMap3(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
-        tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
-        layer1 = loadCSV("assets/maps/harta_principala._Tile Layer 1.csv");
-        layer2 = loadCSV("assets/maps/harta_principala._Tile Layer 2.csv");
+        tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
+        layer1 = loadCSV("assets/maps/nivel1.csv");
 
         loadPlayerSprites();
         startAnimation();
@@ -172,7 +170,6 @@ class GameMap extends JPanel implements KeyListener {
         g2d.translate(-cameraX, -cameraY);
 
         drawLayer(g2d, layer1);
-        drawLayer(g2d, layer2);
 
         int spriteWidth = 150;
         int spriteHeight = 150;
@@ -197,11 +194,12 @@ class GameMap extends JPanel implements KeyListener {
         g2d.setColor(Color.GREEN);
         g2d.draw(hitbox);
 
-        if (showLevel1Message) {
+        if (showReturnMessage) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press E if you want to enter level 2", cameraX + 50, cameraY + 50);
+            g2d.drawString("Press E to return to the main map", cameraX + 50, cameraY + 50);
         }
+
 
         if (showLevel2Message) {
             g2d.setColor(Color.WHITE);
@@ -269,43 +267,10 @@ class GameMap extends JPanel implements KeyListener {
             return;
         }
 
-        if (e.getKeyChar() == 'e' && showLevel1Message) {
-            System.out.println("Trigger E activated!");
-            System.out.println("parentFrame = " + parentFrame);
-
-            GameMap2 gameMap2 = new GameMap2(parentFrame);
-            gameMap2.setFocusable(true);
-            gameMap2.requestFocusInWindow();
-
-            parentFrame.setContentPane(gameMap2); // <- folosește setContentPane, nu add
-            parentFrame.revalidate();
-            parentFrame.pack(); // important pentru getPreferredSize()
-            parentFrame.repaint();
+        if (e.getKeyChar() == 'e' && showLevel2Message) {
+            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
             return;
         }
-
-        if (e.getKeyChar() == '1' && showLevel2Message) {
-            System.out.println("Trigger 1 activated!");
-            System.out.println("parentFrame = " + parentFrame);
-
-            GameMap3 gameMap3 = new GameMap3(parentFrame);
-            gameMap3.setFocusable(true);
-            gameMap3.requestFocusInWindow();
-
-            parentFrame.setContentPane(gameMap3); // <- folosește setContentPane, nu add
-            parentFrame.revalidate();
-            parentFrame.pack(); // important pentru getPreferredSize()
-            parentFrame.repaint();
-            return;
-        }
-
-
-
-
-//        if (e.getKeyChar() == 'e' && showLevel1Message) {
-//            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
-//            return;
-//        }
 
         if (isAnimating || menuVisible) return;
 
@@ -350,17 +315,17 @@ class GameMap extends JPanel implements KeyListener {
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
 
         boolean possible = false;
+        boolean baseWalkable = false;
         if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
             int tile1 = layer1[newY][newX];
-            int tile2 = layer2[newY][newX];
 
-            boolean baseWalkable = tile1 == 2 || tile1 == 17 || tile2 == 39 || tile2 == 47;
-            boolean specialWalkable = tile2 == 111 || tile2 == 119;
+            baseWalkable = tile1 == 1567 || tile1 == 212 || tile1 == 213 || tile1 == 286 || tile1 == 287;
+            //boolean specialWalkable = tile2 == 111 || tile2 == 119;
 
-            possible = baseWalkable || specialWalkable;
+           // possible = baseWalkable || specialWalkable;
         }
 
-        if (inBounds && possible) {
+        if (inBounds && baseWalkable) {
             isAnimating = true;
             int steps = 4;
             int stepSize = TILE_SIZE / steps;
@@ -382,6 +347,7 @@ class GameMap extends JPanel implements KeyListener {
                     timer.stop();
                     playerX = newX;
                     playerY = newY;
+                    showReturnMessage = (playerX == RETURN_TRIGGER_X && playerY == RETURN_TRIGGER_Y);
                     offsetX = 0;
                     offsetY = 0;
                     isAnimating = false;
@@ -389,7 +355,6 @@ class GameMap extends JPanel implements KeyListener {
                     hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
                     hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
 
-                    showLevel1Message = (playerX == LEVEL1_TRIGGER_X && playerY == LEVEL1_TRIGGER_Y);
                     showLevel2Message = (playerX == LEVEL2_TRIGGER_X && playerY == LEVEL2_TRIGGER_Y);
 
                     repaint();

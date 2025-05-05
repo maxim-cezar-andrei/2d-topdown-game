@@ -318,17 +318,18 @@ class GameMap2 extends JPanel implements KeyListener {
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
 
         boolean possible = false;
+        boolean baseWalkable = false;
         if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
             int tile1 = layer1[newY][newX];
             int tile2 = layer2[newY][newX];
 
-            boolean baseWalkable = tile1 == 2 || tile1 == 17 || tile2 == 39 || tile2 == 47;
-            boolean specialWalkable = tile2 == 111 || tile2 == 119;
+            baseWalkable = tile1 == 214 ;
+            //boolean specialWalkable = tile2 == 111 || tile2 == 119;
 
-            possible = baseWalkable || specialWalkable;
+            //possible = baseWalkable || specialWalkable;
         }
 
-        if (inBounds && possible) {
+        if (inBounds && baseWalkable) {
             isAnimating = true;
             int steps = 4;
             int stepSize = TILE_SIZE / steps;
