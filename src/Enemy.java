@@ -12,11 +12,29 @@ public class Enemy {
     private final int frameWidth = 128;
     private final int frameHeight = 128;
     private final int spriteSize = 64; // dimensiunea sprite-ului desenat pe hartă
+    private Rectangle hitbox;
+
+    private final int HITBOX_WIDTH = 26;
+    private final int HITBOX_HEIGHT = 40;
+    private final int HITBOX_OFFSET_X = 18;
+    private final int HITBOX_OFFSET_Y = 24;
+
 
     public Enemy(int x, int y) {
         this.x = x;
         this.y = y;
         loadIdleSprites();
+    }
+
+    public void updateHitbox(int tileSize) {
+        int drawX = x * tileSize + (tileSize - spriteSize);
+        int drawY = y * tileSize + (tileSize - spriteSize);
+        hitbox = new Rectangle(drawX + HITBOX_OFFSET_X, drawY + HITBOX_OFFSET_Y, HITBOX_WIDTH, HITBOX_HEIGHT);
+    }
+
+
+    public Rectangle getHitbox() {
+        return hitbox;
     }
 
     private void loadIdleSprites() {
@@ -35,22 +53,25 @@ public class Enemy {
     }
 
     public void draw(Graphics2D g, int tileSize) {
-        int drawX = x * tileSize + (tileSize - spriteSize) / 2;
-        int drawY = y * tileSize + (tileSize - spriteSize); // pentru aliniere verticală mai naturală
+        int drawX = x * tileSize + (tileSize - spriteSize) ;
+        int drawY = y * tileSize + (tileSize - spriteSize) ; // aliniere verticală
 
+        // Desenează sprite-ul
         if (idleFrames[currentFrame] != null) {
             g.drawImage(idleFrames[currentFrame], drawX, drawY, null);
         } else {
             g.setColor(Color.RED);
-            g.fillRect(drawX, drawY, tileSize, tileSize);
+            g.fillRect(drawX, drawY, spriteSize, spriteSize);
         }
+
+        // DEBUG: desenează conturul hitbox-ului
+        g.setColor(Color.RED);
+        g.draw(hitbox);
     }
+
 
     public void updateAnimation() {
-        currentFrame = (currentFrame + 1) % frameCount;
-    }
 
-    public Rectangle getBounds(int tileSize) {
-        return new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
+        currentFrame = (currentFrame + 1) % frameCount;
     }
 }

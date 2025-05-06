@@ -1,9 +1,7 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -60,6 +58,13 @@ class GameMap3 extends JPanel implements KeyListener {
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
 
+    private static final int STATE_ATTACK = 2;
+    private Image[] attackFrames;
+    private final int ATTACK_FRAMES = 4;
+
+    // Enemy
+    private List<Enemy> enemies = new ArrayList<>();
+
     public GameMap3(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
@@ -68,6 +73,9 @@ class GameMap3 extends JPanel implements KeyListener {
 
         loadPlayerSprites();
         startAnimation();
+
+        enemies.add(new Enemy(5, 5));
+        enemies.add(new Enemy(10, 8));
 
         hitbox = new Rectangle(
                 playerX * TILE_SIZE + HITBOX_OFFSET_X,
@@ -80,6 +88,16 @@ class GameMap3 extends JPanel implements KeyListener {
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    currentFrame = 0;
+                    state = STATE_ATTACK;
+                }
+            }
+        });
 
         pauseMenu = new PauseMenuPanel(
                 () -> { parentFrame.dispose(); new MainMenu(); },
@@ -102,10 +120,11 @@ class GameMap3 extends JPanel implements KeyListener {
         try {
             BufferedImage idleSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Idle.png"));
             BufferedImage runSheet = javax.imageio.ImageIO.read(new File("assets/sprites/NyxSprites/Run.png"));
-
+            BufferedImage attackSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Attack2.png"));
 
             idleFrames = new Image[IDLE_FRAMES];
             runFrames = new Image[RUN_FRAMES];
+            attackFrames = new Image[ATTACK_FRAMES];
 
             for (int i = 0; i < IDLE_FRAMES; i++) {
                 BufferedImage frame = idleSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
@@ -117,6 +136,11 @@ class GameMap3 extends JPanel implements KeyListener {
                 runFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
             }
 
+            for (int i = 0; i < ATTACK_FRAMES; i++) {
+                BufferedImage frame = attackSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT);
+                attackFrames[i] = frame.getScaledInstance(150, 140, Image.SCALE_SMOOTH);
+            }
+
         } catch (Exception e) {
             System.out.println("Eroare la încărcarea sprite-urilor ninja:");
             e.printStackTrace();
@@ -126,11 +150,25 @@ class GameMap3 extends JPanel implements KeyListener {
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
             currentFrame++;
-            if (state == STATE_IDLE) currentFrame %= IDLE_FRAMES;
-            else currentFrame %= RUN_FRAMES;
+            switch (state) {
+                case STATE_IDLE -> currentFrame %= IDLE_FRAMES;
+                case STATE_RUN -> currentFrame %= RUN_FRAMES;
+                case STATE_ATTACK ->
+                {
+                    if (currentFrame >= ATTACK_FRAMES) {
+                        currentFrame = 0;
+                        state = (wPressed || aPressed || sPressed || dPressed) ? STATE_RUN : STATE_IDLE;
+                    }
+                }
+            }
             repaint();
         });
+
         animationTimer.start();
+
+        for (Enemy enemy : enemies) {
+            enemy.updateAnimation();
+        }
     }
 
     private Image flipImageHorizontally(Image img) {
@@ -187,10 +225,12 @@ class GameMap3 extends JPanel implements KeyListener {
         int drawY = playerY * TILE_SIZE + offsetY + (TILE_SIZE - spriteHeight) / 2;
 
         Image sprite = null;
-        if (state == STATE_IDLE && idleFrames != null && idleFrames[currentFrame] != null)
-            sprite = idleFrames[currentFrame];
-        else if (state == STATE_RUN && runFrames != null && runFrames[currentFrame] != null)
-            sprite = runFrames[currentFrame];
+        switch (state) {
+            case STATE_IDLE -> sprite = idleFrames[currentFrame % IDLE_FRAMES];
+            case STATE_RUN -> sprite = runFrames[currentFrame % RUN_FRAMES];
+            case STATE_ATTACK -> sprite = attackFrames[Math.min(currentFrame, ATTACK_FRAMES - 1)];
+        }
+
 
         if (sprite != null) {
             if (!facingRight) sprite = flipImageHorizontally(sprite);
@@ -202,6 +242,20 @@ class GameMap3 extends JPanel implements KeyListener {
 
         g2d.setColor(Color.GREEN);
         g2d.draw(hitbox);
+
+        for (Enemy enemy : enemies) {
+            enemy.updateAnimation();
+            enemy.updateHitbox(TILE_SIZE);
+            enemy.draw((Graphics2D) g2d, TILE_SIZE);
+        }
+
+        for (Enemy enemy : enemies) {
+            enemy.updateHitbox(TILE_SIZE); // redundant, dar sigur
+            if (hitbox.intersects(enemy.getHitbox())) {
+                System.out.println("Coliziune cu inamicul!");
+                // aici poți pune logică de damage, eliminare, etc.
+            }
+        }
 
         if (showReturnMessage) {
             g2d.setColor(Color.WHITE);
@@ -282,6 +336,7 @@ class GameMap3 extends JPanel implements KeyListener {
         }
 
         if (isAnimating || menuVisible) return;
+        if (state == STATE_ATTACK) return;
 
         final int[] dx = {0}, dy = {0};
 
@@ -323,15 +378,12 @@ class GameMap3 extends JPanel implements KeyListener {
         boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
 
-        boolean possible = false;
+        //boolean possible = false;
         boolean baseWalkable = false;
         if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
             int tile1 = layer1[newY][newX];
 
             baseWalkable = tile1 == 1567 || tile1 == 212 || tile1 == 213 || tile1 == 286 || tile1 == 287;
-            //boolean specialWalkable = tile2 == 111 || tile2 == 119;
-
-            // possible = baseWalkable || specialWalkable;
         }
 
         if (inBounds && baseWalkable) {
