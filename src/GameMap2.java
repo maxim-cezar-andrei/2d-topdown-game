@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
@@ -51,9 +53,9 @@ class GameMap2 extends JPanel implements KeyListener {
     private final int HITBOX_OFFSET_X = 4;
     private final int HITBOX_OFFSET_Y = -2;
 
-    private final int LEVEL2_TRIGGER_X = 1;
-    private final int LEVEL2_TRIGGER_Y = 9;
-    private boolean showLevel2Message = false;
+    private final int LEVEL1_TRIGGER_X = 22;
+    private final int LEVEL1_TRIGGER_Y = 5;
+    private boolean showLevel1Message = false;
 
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
@@ -63,7 +65,6 @@ class GameMap2 extends JPanel implements KeyListener {
 
         tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
         layer1 = loadCSV("assets/maps/nivel2.csv");
-
 
         loadPlayerSprites();
         startAnimation();
@@ -89,6 +90,12 @@ class GameMap2 extends JPanel implements KeyListener {
         pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
         add(pauseMenu);
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+            }
+        });
     }
 
     private void loadPlayerSprites() {
@@ -141,6 +148,115 @@ class GameMap2 extends JPanel implements KeyListener {
         return op.filter(original, null);
     }
 
+    private int[][] loadCSV(String path) {
+        List<int[]> rows = new ArrayList<>();
+        try (Scanner scanner = new Scanner(new File(path))) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                String[] tokens = line.split(",");
+                int[] row = new int[tokens.length];
+                for (int i = 0; i < tokens.length; i++) {
+                    row[i] = Integer.parseInt(tokens[i].trim());
+                }
+                rows.add(row);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return rows.toArray(new int[0][0]);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        updateCamera();
+
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.translate(-cameraX, -cameraY);
+
+        drawLayer(g2d, layer1);
+
+        int spriteWidth = 150;
+        int spriteHeight = 150;
+
+        int drawX = playerX * TILE_SIZE + offsetX + (TILE_SIZE - spriteWidth) / 2;
+        int drawY = playerY * TILE_SIZE + offsetY + (TILE_SIZE - spriteHeight) / 2;
+
+        Image sprite = null;
+        if (state == STATE_IDLE && idleFrames != null && idleFrames[currentFrame] != null)
+            sprite = idleFrames[currentFrame];
+        else if (state == STATE_RUN && runFrames != null && runFrames[currentFrame] != null)
+            sprite = runFrames[currentFrame];
+
+        if (sprite != null) {
+            if (!facingRight) sprite = flipImageHorizontally(sprite);
+            g2d.drawImage(sprite, drawX, drawY, this);
+        } else {
+            g2d.setColor(Color.RED);
+            g2d.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
+        }
+
+        g2d.setColor(Color.GREEN);
+        g2d.draw(hitbox);
+
+        if (showReturnMessage) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press E to return to the main map", cameraX + 50, cameraY + 50);
+        }
+
+
+        if (showLevel1Message) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press 1 if you want to enter level 1", cameraX + 50, cameraY + 50);
+        }
+        g2d.dispose();
+    }
+
+    private void drawLayer(Graphics g, int[][] layer) {
+        for (int row = 0; row < layer.length; row++) {
+            for (int col = 0; col < layer[0].length; col++) {
+                int tileId = layer[row][col];
+                if (tileId != 0) {
+                    int tileCol = tileId % TILES_PER_ROW;
+                    int tileRow = tileId / TILES_PER_ROW;
+                    g.drawImage(tileset,
+                            col * TILE_SIZE, row * TILE_SIZE, (col + 1) * TILE_SIZE, (row + 1) * TILE_SIZE,
+                            tileCol * TILE_SIZE, tileRow * TILE_SIZE, (tileCol + 1) * TILE_SIZE, (tileRow + 1) * TILE_SIZE,
+                            this);
+                }
+            }
+        }
+    }
+
+    private void updateCamera() {
+        int mapWidth = layer1[0].length * TILE_SIZE;
+        int mapHeight = layer1.length * TILE_SIZE;
+
+        int viewportWidth = parentFrame.getContentPane().getWidth();
+        int viewportHeight = parentFrame.getContentPane().getHeight();
+
+        cameraX = playerX * TILE_SIZE + offsetX - viewportWidth / 2 + TILE_SIZE / 2;
+        cameraY = playerY * TILE_SIZE + offsetY - viewportHeight / 2 + TILE_SIZE / 2;
+
+        cameraX = Math.max(0, Math.min(cameraX, mapWidth - viewportWidth));
+        cameraY = Math.max(0, Math.min(cameraY, mapHeight - viewportHeight));
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(layer1[0].length * TILE_SIZE, layer1.length * TILE_SIZE);
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
         {
@@ -160,7 +276,7 @@ class GameMap2 extends JPanel implements KeyListener {
             return;
         }
 
-        if (e.getKeyChar() == '2' && showLevel2Message) {
+        if (e.getKeyChar() == 'e' && showLevel1Message) {
             JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
             return;
         }
@@ -207,16 +323,15 @@ class GameMap2 extends JPanel implements KeyListener {
         boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
 
-        //boolean possible = false;
+        boolean possible = false;
         boolean baseWalkable = false;
         if (newY >= 0 && newY < layer1.length && newX >= 0 && newX < layer1[0].length) {
             int tile1 = layer1[newY][newX];
 
+            baseWalkable = tile1 == 1567 || tile1 == 212 || tile1 == 213 || tile1 == 286 || tile1 == 287;
+            //boolean specialWalkable = tile2 == 111 || tile2 == 119;
 
-            baseWalkable = tile1 == 225;
-
-
-            //possible = baseWalkable && specialWalkable;
+            // possible = baseWalkable || specialWalkable;
         }
 
         if (inBounds && baseWalkable) {
@@ -249,7 +364,7 @@ class GameMap2 extends JPanel implements KeyListener {
                     hitbox.x = playerX * TILE_SIZE + HITBOX_OFFSET_X;
                     hitbox.y = playerY * TILE_SIZE + HITBOX_OFFSET_Y;
 
-                    showLevel2Message = (playerX == LEVEL2_TRIGGER_X && playerY == LEVEL2_TRIGGER_Y);
+                    showLevel1Message = (playerX == LEVEL1_TRIGGER_X && playerY == LEVEL1_TRIGGER_Y);
 
                     repaint();
                 }
@@ -262,123 +377,16 @@ class GameMap2 extends JPanel implements KeyListener {
         }
     }
 
-    private int[][] loadCSV(String path) {
-        List<int[]> rows = new ArrayList<>();
-        try (Scanner scanner = new Scanner(new File(path))) {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                String[] tokens = line.split(",");
-                int[] row = new int[tokens.length];
-                for (int i = 0; i < tokens.length; i++) {
-                    row[i] = Integer.parseInt(tokens[i].trim());
-                }
-                rows.add(row);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return rows.toArray(new int[0][0]);
-    }
-
     @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        updateCamera();
-
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, getWidth(), getHeight());
-
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.translate(-cameraX, -cameraY);
-
-        drawLayer(g2d, layer1);
-
-
-        int spriteWidth = 150;
-        int spriteHeight = 150;
-
-        int drawX = playerX * TILE_SIZE + offsetX + (TILE_SIZE - spriteWidth) / 2;
-        int drawY = playerY * TILE_SIZE + offsetY + (TILE_SIZE - spriteHeight) / 2;
-
-        Image sprite = null;
-        if (state == STATE_IDLE && idleFrames != null && idleFrames[currentFrame] != null)
-            sprite = idleFrames[currentFrame];
-        else if (state == STATE_RUN && runFrames != null && runFrames[currentFrame] != null)
-            sprite = runFrames[currentFrame];
-
-        if (sprite != null) {
-            if (!facingRight) sprite = flipImageHorizontally(sprite);
-            g2d.drawImage(sprite, drawX, drawY, this);
-        } else {
-            g2d.setColor(Color.RED);
-            g2d.fillRect(drawX, drawY, TILE_SIZE, TILE_SIZE);
-        }
-
-        g2d.setColor(Color.GREEN);
-        g2d.draw(hitbox);
-
-        if (showReturnMessage) {
-            g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press E to return to the main map", cameraX + 50, cameraY + 50);
-        }
-
-        if (showLevel2Message) {
-            g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press 2 if you want to enter level 2", cameraX + 50, cameraY + 50);
-        }
-        g2d.dispose();
-    }
-
-    private void drawLayer(Graphics g, int[][] layer) {
-        for (int row = 0; row < layer.length; row++) {
-            for (int col = 0; col < layer[0].length; col++) {
-                int tileId = layer[row][col];
-                if (tileId != 0) {
-                    int tileCol = tileId % TILES_PER_ROW;
-                    int tileRow = tileId / TILES_PER_ROW;
-                    g.drawImage(tileset,
-                            col * TILE_SIZE, row * TILE_SIZE, (col + 1) * TILE_SIZE, (row + 1) * TILE_SIZE,
-                            tileCol * TILE_SIZE, tileRow * TILE_SIZE, (tileCol + 1) * TILE_SIZE, (tileRow + 1) * TILE_SIZE,
-                            this);
-                }
-            }
-        }
-    }
-
-    private void updateCamera() {
-        int mapWidth = layer1[0].length * TILE_SIZE;
-        int mapHeight = layer1.length * TILE_SIZE;
-
-        int viewportWidth = parentFrame.getContentPane().getWidth();
-        int viewportHeight = parentFrame.getContentPane().getHeight();
-
-        cameraX = playerX * TILE_SIZE + offsetX - viewportWidth / 2 + TILE_SIZE / 2;
-        cameraY = playerY * TILE_SIZE + offsetY - viewportHeight / 2 + TILE_SIZE / 2;
-
-        cameraX = Math.max(0, Math.min(cameraX, mapWidth - viewportWidth));
-        cameraY = Math.max(0, Math.min(cameraY, mapHeight - viewportHeight));
-    }
-
-    @Override
-    public Dimension getPreferredSize() {
-        return new Dimension(layer1[0].length * TILE_SIZE, layer1.length * TILE_SIZE);
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {}
-
-    @Override
-    public void keyReleased(KeyEvent e) {
+    public void keyReleased(KeyEvent e)
+    {
         switch (e.getKeyChar()) {
             case 's' -> sPressed = false;
             case 'a' -> aPressed = false;
             case 'd' -> dPressed = false;
             case 'w' -> wPressed = false;
         }
-        if (!wPressed && !sPressed && !aPressed && !dPressed)
+        if(!wPressed && !sPressed && !aPressed && !dPressed)
             state = STATE_IDLE;
     }
 }
