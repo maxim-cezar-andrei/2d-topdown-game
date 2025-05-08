@@ -584,6 +584,7 @@ class GameMap extends JPanel implements KeyListener {
     }
 
 
+
     @Override
     public void keyReleased(KeyEvent e)
     {

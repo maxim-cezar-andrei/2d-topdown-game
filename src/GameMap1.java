@@ -503,3 +503,4 @@ class GameMap1 extends JPanel implements KeyListener {
             state = STATE_IDLE;
     }
 }
+
