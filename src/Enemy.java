@@ -82,7 +82,7 @@ public class Enemy {
         }
     }
 
-    private void updateHitbox() {
+    public void updateHitbox(int TILE_SIZE) {
         hitbox.setLocation(x * 32 + HITBOX_OFFSET_X, y * 32 + HITBOX_OFFSET_Y);
     }
 
