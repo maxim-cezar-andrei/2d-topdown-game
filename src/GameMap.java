@@ -47,10 +47,10 @@ class GameMap extends JPanel implements KeyListener {
     private final int ATTACK_FRAMES = 4;
 
     private Rectangle hitbox;
-    private final int HITBOX_WIDTH = 30;
-    private final int HITBOX_HEIGHT =36;
-    private final int HITBOX_OFFSET_X = 4;
-    private final int HITBOX_OFFSET_Y = -4;
+    private final int HITBOX_WIDTH = 28;
+    private final int HITBOX_HEIGHT =28;
+    private final int HITBOX_OFFSET_X = 2;
+    private final int HITBOX_OFFSET_Y = 2;
 
     private final int LEVEL1_TRIGGER_X =22;
     private final int LEVEL1_TRIGGER_Y = 5;
@@ -68,9 +68,13 @@ class GameMap extends JPanel implements KeyListener {
     private boolean wPressed, aPressed, sPressed, dPressed;
     private boolean facingRight = true;
 
+    private Rectangle attackHitbox = new Rectangle();
+    private final int ATTACK_HITBOX_WIDTH = 40;
+    private final int ATTACK_HITBOX_HEIGHT = 24;
+    private final int ATTACK_HITBOX_OFFSET_Y = 10;
+    private final int ATTACK_HITBOX_RIGHT_OFFSET = 24;
     /// Enemy
     private List<Enemy> enemies = new ArrayList<>();
-
 
 
     public GameMap(JFrame parentFrame) {
@@ -164,24 +168,53 @@ class GameMap extends JPanel implements KeyListener {
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
             currentFrame++;
+
             switch (state) {
-                case STATE_IDLE -> currentFrame %= IDLE_FRAMES;
-                case STATE_RUN -> currentFrame %= RUN_FRAMES;
-                case STATE_ATTACK ->
-                {
-                    if (currentFrame >= ATTACK_FRAMES) {
-                        currentFrame = 0;
-                        state = (wPressed || aPressed || sPressed || dPressed) ? STATE_RUN : STATE_IDLE;
+                case STATE_IDLE:
+                    currentFrame %= IDLE_FRAMES;
+                    break;
+
+                case STATE_RUN:
+                    currentFrame %= RUN_FRAMES;
+                    break;
+
+                case STATE_ATTACK: {
+                        int attackX = facingRight
+                                ? playerX * TILE_SIZE + ATTACK_HITBOX_RIGHT_OFFSET
+                                : playerX * TILE_SIZE - ATTACK_HITBOX_WIDTH;
+
+                        attackHitbox.setBounds(
+                                attackX,
+                                playerY * TILE_SIZE + ATTACK_HITBOX_OFFSET_Y,
+                                ATTACK_HITBOX_WIDTH,
+                                ATTACK_HITBOX_HEIGHT
+                        );
+
+                        for (Enemy enemy : enemies) {
+                            if (!enemy.isDead()
+                                    && playerY == enemy.getY()
+                                    && attackHitbox.intersects(enemy.getHitbox())) {
+                                enemy.die();
+                                System.out.println("Inamic lovit!");
+                            }
+                        }
+                        if (currentFrame >= ATTACK_FRAMES) {
+                            currentFrame = 0;
+                            state = (wPressed || aPressed || sPressed || dPressed) ? STATE_RUN : STATE_IDLE;
+
+                        }
                     }
-                }
+                    break;
+
             }
+
+            for (Enemy enemy : enemies) {
+                enemy.updateAnimation();
+            }
+
             repaint();
         });
         animationTimer.start();
-
-        for (Enemy enemy : enemies) {
-            enemy.updateAnimation();
-        }
     }
 
     private Image flipImageHorizontally(Image img) {
@@ -278,6 +311,27 @@ class GameMap extends JPanel implements KeyListener {
             g2d.drawString("Press 3 if you want to enter level 3", cameraX + 50, cameraY + 50);
         }
 
+        if (state == STATE_ATTACK) {
+            g2d.setColor(Color.BLUE);
+            Rectangle attackHitbox;
+            if (facingRight) {
+                attackHitbox = new Rectangle(
+                        playerX * TILE_SIZE + ATTACK_HITBOX_RIGHT_OFFSET,
+                        playerY * TILE_SIZE + ATTACK_HITBOX_OFFSET_Y,
+                        ATTACK_HITBOX_WIDTH,
+                        ATTACK_HITBOX_HEIGHT
+                );
+            } else {
+                attackHitbox = new Rectangle(
+                        playerX * TILE_SIZE - ATTACK_HITBOX_WIDTH,
+                        playerY * TILE_SIZE + ATTACK_HITBOX_OFFSET_Y,
+                        ATTACK_HITBOX_WIDTH,
+                        ATTACK_HITBOX_HEIGHT
+                );
+            }
+            g2d.draw(attackHitbox);
+        }
+
         g2d.dispose();
     }
 
@@ -357,7 +411,6 @@ class GameMap extends JPanel implements KeyListener {
             return;
         }
 
-
         if (e.getKeyChar() == '2' && showLevel2Message) {
             System.out.println("Trigger E activated!");
             System.out.println("parentFrame = " + parentFrame);
@@ -413,7 +466,7 @@ class GameMap extends JPanel implements KeyListener {
                 aPressed = true;
                 facingRight = false;
             }
-            case 'd' ->{
+            case 'd' -> {
                 dx[0] = 1;
                 dPressed = true;
                 facingRight = true;
@@ -434,6 +487,37 @@ class GameMap extends JPanel implements KeyListener {
         int futureDrawX = newX * TILE_SIZE;
         int futureDrawY = newY * TILE_SIZE;
 
+        Rectangle futureHitbox = new Rectangle(
+                newX * TILE_SIZE + HITBOX_OFFSET_X,
+                newY * TILE_SIZE + HITBOX_OFFSET_Y,
+                HITBOX_WIDTH,
+                HITBOX_HEIGHT
+        );
+
+        /// Coliziunea cu inamicii
+        boolean collisionWithEnemy = false;
+        for (Enemy enemy : enemies) {
+            if (futureHitbox.intersects(enemy.getHitbox())) {
+                collisionWithEnemy = true;
+                break;
+            }
+        }
+
+        if (collisionWithEnemy) {
+            state = STATE_IDLE;
+            return; // Nyx nu se mai poate deplasa peste inamic
+        }
+
+        /// Atacul lui Nyx
+        boolean attackEnemy = false;
+        for (Enemy enemy : enemies) {
+            if (!enemy.isDead() && attackHitbox.intersects(enemy.getHitbox())) {
+                enemy.die(); // => începe animatia de death
+            }
+        }
+
+
+        /// Coliziunea cu tile urile
         boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
 
