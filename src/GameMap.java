@@ -113,7 +113,6 @@ class GameMap extends JPanel implements KeyListener {
             }
         });
 
-
         pauseMenu = new PauseMenuPanel(
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> { JOptionPane.showMessageDialog(this, "Load not implemented yet."); },
@@ -290,9 +289,20 @@ class GameMap extends JPanel implements KeyListener {
         g2d.draw(hitbox);
 
         for (Enemy enemy : enemies) {
-            enemy.updateAnimation(); // schimbă frame-ul curent
-            enemy.draw((Graphics2D) g2d, TILE_SIZE); // desenează sprite-ul
+            enemy.updateAnimation();
+            enemy.updateHitbox(TILE_SIZE);
+            enemy.draw((Graphics2D) g2d, TILE_SIZE);
+
         }
+        // După desenarea sprite-ului și hitboxului jucătorului
+        for (Enemy enemy : enemies) {
+            enemy.updateHitbox(TILE_SIZE);
+            if (hitbox.intersects(enemy.getHitbox())) {
+                System.out.println("Coliziune cu inamicul!");
+                // Poți marca inamicul pentru eliminare sau scădere HP
+            }
+        }
+
 
         if (showLevel1Message) {
             g2d.setColor(Color.WHITE);
@@ -442,10 +452,7 @@ class GameMap extends JPanel implements KeyListener {
             SwingUtilities.invokeLater(gameMap3::requestFocusInWindow);
             return;
         }
-//        if (e.getKeyChar() == 'e' && showLevel1Message) {
-//            JOptionPane.showMessageDialog(this, "Intrăm în nivelul 1!");
-//            return;
-//        }
+
 
         if (isAnimating || menuVisible) return;
         if (state == STATE_ATTACK) return;
@@ -542,8 +549,7 @@ class GameMap extends JPanel implements KeyListener {
             int totalOffsetY = dy[0] * TILE_SIZE;
 
             timer.addActionListener(evt -> {
-//                offsetX -= dx[0] * stepSize;
-//                offsetY -= dy[0] * stepSize;
+
                 offsetX = totalOffsetX - (totalOffsetX * count[0] / steps);
                 offsetY = totalOffsetY - (totalOffsetY * count[0] / steps);
 
