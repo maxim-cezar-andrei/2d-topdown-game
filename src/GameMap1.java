@@ -62,6 +62,11 @@ class GameMap1 extends JPanel implements KeyListener {
     private Image[] attackFrames;
     private final int ATTACK_FRAMES = 4;
 
+    private Rectangle attackHitbox = new Rectangle();
+    private final int ATTACK_HITBOX_WIDTH = 40;
+    private final int ATTACK_HITBOX_HEIGHT = 24;
+    private final int ATTACK_HITBOX_OFFSET_Y = 10;
+    private final int ATTACK_HITBOX_RIGHT_OFFSET = 24;
 
     /// Enemy
     private List<Enemy> enemies = new ArrayList<>();
@@ -151,17 +156,43 @@ class GameMap1 extends JPanel implements KeyListener {
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
             currentFrame++;
+
             switch (state) {
-                case STATE_IDLE -> currentFrame %= IDLE_FRAMES;
-                case STATE_RUN -> currentFrame %= RUN_FRAMES;
-                case STATE_ATTACK ->
-                {
+                case STATE_IDLE:
+                    currentFrame %= IDLE_FRAMES;
+                    break;
+                case STATE_RUN:
+                    currentFrame %= RUN_FRAMES;
+                    break;
+                case STATE_ATTACK: {
+                    int attackX = facingRight
+                            ? playerX * TILE_SIZE + ATTACK_HITBOX_RIGHT_OFFSET
+                            : playerX * TILE_SIZE - ATTACK_HITBOX_WIDTH;
+
+                    attackHitbox.setBounds(
+                            attackX,
+                            playerY * TILE_SIZE + ATTACK_HITBOX_OFFSET_Y,
+                            ATTACK_HITBOX_WIDTH,
+                            ATTACK_HITBOX_HEIGHT
+                    );
+
+                    for (Enemy enemy : enemies) {
+                        if (!enemy.isDead()
+                                && playerY == enemy.getY()
+                                && attackHitbox.intersects(enemy.getHitbox())) {
+                            enemy.die();
+                            System.out.println("Inamic lovit!");
+                        }
+                    }
+
                     if (currentFrame >= ATTACK_FRAMES) {
                         currentFrame = 0;
                         state = (wPressed || aPressed || sPressed || dPressed) ? STATE_RUN : STATE_IDLE;
                     }
+                    break;
                 }
             }
+
             repaint();
         });
 
@@ -375,8 +406,39 @@ class GameMap1 extends JPanel implements KeyListener {
         int futureDrawX = newX * TILE_SIZE;
         int futureDrawY = newY * TILE_SIZE;
 
+
+        /// Coliziunea cu inamicii
+        Rectangle futureHitbox = new Rectangle(
+                newX * TILE_SIZE + HITBOX_OFFSET_X,
+                newY * TILE_SIZE + HITBOX_OFFSET_Y,
+                HITBOX_WIDTH,
+                HITBOX_HEIGHT
+        );
+
+        boolean collisionWithEnemy = false;
+        for (Enemy enemy : enemies) {
+            if (!enemy.isDead() && futureHitbox.intersects(enemy.getHitbox())) {
+                collisionWithEnemy = true;
+                break;
+            }
+
+        }
+
+        if (collisionWithEnemy) {
+            state = STATE_IDLE;
+            return; // Nyx nu se mai poate deplasa peste inamic
+        }
+
+        /// Atacul lui Nyx
+        for (Enemy enemy : enemies) {
+            if (!enemy.isDead() && attackHitbox.intersects(enemy.getHitbox())) {
+                enemy.die(); // => începe animatia de death
+            }
+        }
+
         boolean inBounds = futureDrawX >= 0 && futureDrawX + TILE_SIZE <= mapWidth &&
                 futureDrawY >= 0 && futureDrawY + TILE_SIZE <= mapHeight;
+
 
         //boolean possible = false;
         boolean baseWalkable = false;
@@ -425,6 +487,7 @@ class GameMap1 extends JPanel implements KeyListener {
         } else {
             state = STATE_IDLE;
         }
+
     }
 
     @Override
