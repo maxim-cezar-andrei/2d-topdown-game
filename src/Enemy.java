@@ -100,8 +100,13 @@ public class Enemy {
         deathCurrentFrame = 0;
     }
 
+    public int getX()
+    {
+        return x;
+    }
     public int getY()
     {
         return y;
     }
+
 }  // end Enemy

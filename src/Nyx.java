@@ -1,5 +1,3 @@
-// Nyx.java completat cu update() pentru mișcare
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -262,7 +260,7 @@ public class Nyx {
 
         for (Enemy enemy : enemies) {
             if (!enemy.isDead() && futureHitbox.intersects(enemy.getHitbox())) {
-                return; // coliziune cu inamic
+                return;
             }
         }
 

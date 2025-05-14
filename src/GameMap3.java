@@ -60,11 +60,40 @@ class GameMap3 extends JPanel implements KeyListener {
         });
 
         pauseMenu = new PauseMenuPanel(
+                () -> {
+                    pauseMenu.setVisible(false);
+                    menuVisible = false;
+                    requestFocusInWindow();  // revenim la joc
+                },
                 () -> { parentFrame.dispose(); new MainMenu(); },
-                () -> { JOptionPane.showMessageDialog(GameMap3.this, "Load not implemented yet."); },
-                () -> { JOptionPane.showMessageDialog(GameMap3.this, "Options coming soon!"); },
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    db.saveGame(nyx, enemies);
+                    db.close();
+                    JOptionPane.showMessageDialog(this, "Game saved!");
+                    pauseMenu.requestFocusInWindow();
+                },
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    GameState state = db.loadLastGame();
+                    db.close();
+
+                    if (state != null) {
+                        this.nyx = state.getNyx();
+                        this.enemies = state.getEnemies();
+                        nyx.setWalkableTiles(List.of(2, 17));
+                        nyx.setRepaintCallback(this::repaint);
+                        JOptionPane.showMessageDialog(this, "Game loaded!");
+                        pauseMenu.requestFocusInWindow();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No saved game found.");
+                    }
+                },
+                () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
+
+
         pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
         pauseMenu.setFocusable(false);

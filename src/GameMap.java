@@ -66,11 +66,40 @@ class GameMap extends JPanel implements KeyListener {
         });
 
         pauseMenu = new PauseMenuPanel(
+                () -> {
+                    pauseMenu.setVisible(false);
+                    menuVisible = false;
+                    requestFocusInWindow();
+                },
                 () -> { parentFrame.dispose(); new MainMenu(); },
-                () -> { JOptionPane.showMessageDialog(this, "Load not implemented yet."); },
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    db.saveGame(nyx, enemies);
+                    db.close();
+                    JOptionPane.showMessageDialog(this, "Game saved!");
+                    pauseMenu.requestFocusInWindow();
+                },
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    GameState state = db.loadLastGame();
+                    db.close();
+
+                    if (state != null) {
+                        this.nyx = state.getNyx();
+                        this.enemies = state.getEnemies();
+                        nyx.setWalkableTiles(List.of(2, 17));
+                        nyx.setRepaintCallback(this::repaint);
+                        JOptionPane.showMessageDialog(this, "Game loaded!");
+                        pauseMenu.requestFocusInWindow();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No saved game found.");
+                    }
+                },
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
+
+
 
         pauseMenu.setBounds(0, 0, getWidth(), getHeight());
         pauseMenu.setVisible(false);
@@ -87,7 +116,6 @@ class GameMap extends JPanel implements KeyListener {
         new Timer(120, e -> {
             nyx.update(layer1, layer2, enemies);
 
-            // ✅ actualizează poziția pentru trigger de nivel
             int nyxX = nyx.getXTile();
             int nyxY = nyx.getYTile();
 
@@ -98,12 +126,11 @@ class GameMap extends JPanel implements KeyListener {
             for (Enemy enemy : enemies) {
                 enemy.updateAnimation();
             }
-
             repaint();
         }).start();
-
-
     }
+
+
 
     private int[][] loadCSV(String path) {
         List<int[]> rows = new ArrayList<>();

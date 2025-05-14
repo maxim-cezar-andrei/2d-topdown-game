@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.util.List;
 
 class MainMenu extends JFrame {
     private FadePanel overlay;
@@ -60,6 +61,7 @@ class MainMenu extends JFrame {
         JButton loadButton = createStyledButton("Load", customFont);
         loadButton.setBounds(50, 220, 200, 40);
         backgroundLabel.add(loadButton);
+
 
         JButton highscoresButton = createStyledButton("Highscores", customFont);
         highscoresButton.setBounds(50, 280, 200, 40);

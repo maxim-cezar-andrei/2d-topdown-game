@@ -2,9 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 
 public class PauseMenuPanel extends JPanel {
-    public PauseMenuPanel(Runnable onMainMenu, Runnable onLoad, Runnable onOptions, Runnable onExit) {
+    public PauseMenuPanel(Runnable onResume, Runnable onMainMenu, Runnable onSave, Runnable onLoad, Runnable onOptions, Runnable onExit) {
         setOpaque(false);
-        //setBackground(new Color(0, 0, 0, 180));  // Fundal semi-transparent
 
         setLayout(new GridBagLayout());  // Centrează conținutul
 
@@ -15,14 +14,18 @@ public class PauseMenuPanel extends JPanel {
 
         // Creăm butoanele
         JButton mainMenuButton = createStyledButton("Main Menu", onMainMenu);
+        JButton resumeButton = createStyledButton("Resume", onResume);
+        JButton saveButton = createStyledButton("Save", onSave);
         JButton loadButton     = createStyledButton("Load", onLoad);
         JButton optionsButton  = createStyledButton("Options", onOptions);
         JButton exitButton     = createStyledButton("Exit", onExit);
 
         // Adăugăm butoanele în panou
-        menuBox.add(mainMenuButton);
+        menuBox.add(resumeButton);
+        menuBox.add(saveButton);
         menuBox.add(loadButton);
         menuBox.add(optionsButton);
+        menuBox.add(mainMenuButton);
         menuBox.add(exitButton);
 
         add(menuBox);
@@ -57,12 +60,12 @@ public class PauseMenuPanel extends JPanel {
     }
     @Override
     protected void paintComponent(Graphics g) {
-        // Desenează fundal semi-transparent
+
         Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setColor(new Color(0, 0, 0, 150)); // negru cu transparență
+        g2d.setColor(new Color(0, 0, 0, 150));
         g2d.fillRect(0, 0, getWidth(), getHeight());
         g2d.dispose();
-        super.paintComponent(g); // opțional pentru redare corectă a componentelor
+        super.paintComponent(g);
     }
 }
 
