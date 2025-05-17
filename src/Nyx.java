@@ -233,11 +233,11 @@ public class Nyx {
         return hitbox;
     }
 
-    public int getXTile() {
+    public int getX() {
         return x;
     }
 
-    public int getYTile() {
+    public int getY() {
         return y;
     }
 

@@ -36,6 +36,7 @@ class GameMap extends JPanel implements KeyListener {
 
     private Nyx nyx;
     private List<Enemy> enemies = new ArrayList<>();
+    private int mapId = 0;
 
     public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -74,7 +75,7 @@ class GameMap extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies);
+                    db.saveGame(nyx, enemies, 0);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -116,8 +117,8 @@ class GameMap extends JPanel implements KeyListener {
         new Timer(120, e -> {
             nyx.update(layer1, layer2, enemies);
 
-            int nyxX = nyx.getXTile();
-            int nyxY = nyx.getYTile();
+            int nyxX = nyx.getX();
+            int nyxY = nyx.getY();
 
             showLevel1Message = (nyxX == LEVEL1_TRIGGER_X && nyxY == LEVEL1_TRIGGER_Y);
             showLevel2Message = (nyxX == LEVEL2_TRIGGER_X && nyxY == LEVEL2_TRIGGER_Y);

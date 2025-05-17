@@ -68,7 +68,7 @@ class GameMap3 extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies);
+                    db.saveGame(nyx, enemies, 3);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -81,7 +81,7 @@ class GameMap3 extends JPanel implements KeyListener {
                     if (state != null) {
                         this.nyx = state.getNyx();
                         this.enemies = state.getEnemies();
-                        nyx.setWalkableTiles(List.of(2, 17));
+                        nyx.setWalkableTiles(List.of(1567, 212, 213, 286, 287));
                         nyx.setRepaintCallback(this::repaint);
                         JOptionPane.showMessageDialog(this, "Game loaded!");
                         pauseMenu.requestFocusInWindow();
@@ -109,8 +109,8 @@ class GameMap3 extends JPanel implements KeyListener {
         new Timer(120, e -> {
             nyx.update(layer1, layer1, enemies);
 
-            int nx = nyx.getXTile();
-            int ny = nyx.getYTile();
+            int nx = nyx.getX();
+            int ny = nyx.getY();
             showReturnMessage = (nx == RETURN_TRIGGER_X && ny == RETURN_TRIGGER_Y);
             showLevel3Message = (nx == LEVEL3_TRIGGER_X && ny == LEVEL3_TRIGGER_Y);
 
@@ -160,8 +160,8 @@ class GameMap3 extends JPanel implements KeyListener {
         int viewportWidth = parentFrame.getContentPane().getWidth();
         int viewportHeight = parentFrame.getContentPane().getHeight();
 
-        int nyxX = nyx.getXTile();
-        int nyxY = nyx.getYTile();
+        int nyxX = nyx.getX();
+        int nyxY = nyx.getY();
 
         cameraX = nyxX * TILE_SIZE - viewportWidth / 2 + TILE_SIZE / 2;
         cameraY = nyxY * TILE_SIZE - viewportHeight / 2 + TILE_SIZE / 2;

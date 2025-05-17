@@ -1,6 +1,5 @@
 // GameMap2.java actualizat cu integrare completă a clasei Nyx
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -65,7 +64,7 @@ class GameMap2 extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies);
+                    db.saveGame(nyx, enemies, 2);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -78,7 +77,7 @@ class GameMap2 extends JPanel implements KeyListener {
                     if (state != null) {
                         this.nyx = state.getNyx();
                         this.enemies = state.getEnemies();
-                        nyx.setWalkableTiles(List.of(2, 17));
+                        nyx.setWalkableTiles(List.of(225));
                         nyx.setRepaintCallback(this::repaint);
                         JOptionPane.showMessageDialog(this, "Game loaded!");
                         pauseMenu.requestFocusInWindow();
@@ -106,8 +105,8 @@ class GameMap2 extends JPanel implements KeyListener {
         new Timer(120, e -> {
             nyx.update(layer1, layer1, enemies);
 
-            int nyxX = nyx.getXTile();
-            int nyxY = nyx.getYTile();
+            int nyxX = nyx.getX();
+            int nyxY = nyx.getY();
             showReturnMessage = (nyxX == RETURN_TRIGGER_X && nyxY == RETURN_TRIGGER_Y);
 
             for (Enemy enemy : enemies) enemy.updateAnimation();
@@ -156,8 +155,8 @@ class GameMap2 extends JPanel implements KeyListener {
         int viewportWidth = parentFrame.getContentPane().getWidth();
         int viewportHeight = parentFrame.getContentPane().getHeight();
 
-        int nyxX = nyx.getXTile();
-        int nyxY = nyx.getYTile();
+        int nyxX = nyx.getX();
+        int nyxY = nyx.getY();
 
         cameraX = nyxX * TILE_SIZE - viewportWidth / 2 + TILE_SIZE / 2;
         cameraY = nyxY * TILE_SIZE - viewportHeight / 2 + TILE_SIZE / 2;

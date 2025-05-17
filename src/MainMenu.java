@@ -97,6 +97,34 @@ class MainMenu extends JFrame {
         });
 
         exitButton.addActionListener(e -> System.exit(0));
+
+        loadButton.addActionListener(e -> {
+            DataBaseManager db = new DataBaseManager();
+            GameState state = db.loadLastGame();
+            db.close();
+
+            if (state != null) {
+                int mapId = state.getMapId();
+                JFrame frame = this; // ← dacă clasa ta extinde JFrame
+                switch (mapId) {
+                    case 0 -> frame.setContentPane(new GameMap(frame, state));
+                    case 1 -> frame.setContentPane(new GameMap1(frame, state));
+                    case 2 -> frame.setContentPane(new GameMap2(frame, state));
+                    case 3 -> frame.setContentPane(new GameMap3(frame, state));
+                    default -> {
+                        JOptionPane.showMessageDialog(null, "Map ID invalid.");
+                        return;
+                    }
+                }
+
+                frame.revalidate();
+                frame.repaint();
+                SwingUtilities.invokeLater(() -> frame.getContentPane().requestFocusInWindow());
+                dispose(); // închide meniul principal dacă e cazul
+            } else {
+                JOptionPane.showMessageDialog(null, "No saved game found.");
+            }
+        });
     }
 
     private JButton createStyledButton(String text, Font font) {

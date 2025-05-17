@@ -20,7 +20,8 @@ public class DataBaseManager {
             CREATE TABLE IF NOT EXISTS game_state (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nyx_x INTEGER,
-                nyx_y INTEGER
+                nyx_y INTEGER,
+                map_id INTEGER
             );
         """;
 
@@ -41,12 +42,13 @@ public class DataBaseManager {
         }
     }
 
-    public void saveGame(Nyx nyx, List<Enemy> enemies) {
+    public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId) {
         try {
-            String insertGame = "INSERT INTO game_state(nyx_x, nyx_y) VALUES (?, ?)";
+            String insertGame = "INSERT INTO game_state(nyx_x, nyx_y, map_id) VALUES (?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertGame, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, nyx.getXTile());
-                ps.setInt(2, nyx.getYTile());
+                ps.setInt(1, nyx.getX());
+                ps.setInt(2, nyx.getY());
+                ps.setInt(3, mapId);
                 ps.executeUpdate();
 
                 ResultSet rs = ps.getGeneratedKeys();
@@ -77,6 +79,7 @@ public class DataBaseManager {
                     int gameId = rs.getInt("id");
                     int nyxX = rs.getInt("nyx_x");
                     int nyxY = rs.getInt("nyx_y");
+                    int mapId = rs.getInt("map_id");
 
                     List<Enemy> enemies = new ArrayList<>();
                     String selectEnemies = "SELECT * FROM enemies WHERE game_id = ?";
@@ -95,7 +98,7 @@ public class DataBaseManager {
                     }
 
                     Nyx nyx = new Nyx(nyxX, nyxY, enemies);  // Constructorul tău deja acceptă aceste date
-                    return new GameState(nyx, enemies);
+                    return new GameState(nyx, enemies, mapId);
                 }
             }
         } catch (SQLException e) {
