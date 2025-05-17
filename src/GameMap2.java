@@ -1,5 +1,3 @@
-// GameMap2.java actualizat cu integrare completă a clasei Nyx
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -26,8 +24,9 @@ class GameMap2 extends JPanel implements KeyListener {
     private final int RETURN_TRIGGER_Y = 2;
     private boolean showReturnMessage = false;
 
-    private List<Enemy> enemies = new ArrayList<>();
     private Nyx nyx;
+    private List<Enemy> enemies = new ArrayList<>();
+    private int mapId = 2;
 
     public GameMap2(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -64,7 +63,7 @@ class GameMap2 extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, 2);
+                    db.saveGame(nyx, enemies, mapId);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -110,6 +109,102 @@ class GameMap2 extends JPanel implements KeyListener {
             showReturnMessage = (nyxX == RETURN_TRIGGER_X && nyxY == RETURN_TRIGGER_Y);
 
             for (Enemy enemy : enemies) enemy.updateAnimation();
+            repaint();
+        }).start();
+    }
+
+    public GameMap2(JFrame parentFrame, GameState state) {
+        this.parentFrame = parentFrame;
+        this.nyx = state.getNyx();
+        this.enemies = state.getEnemies();
+        this.mapId = 2;
+
+        this.tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
+        this.layer1 = loadCSV("assets/maps/nivel2.csv");
+
+        nyx.setWalkableTiles(List.of(225));
+        nyx.setRepaintCallback(this::repaint);
+
+        setLayout(null);
+        setFocusable(true);
+        requestFocusInWindow();
+        addKeyListener(this);
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                nyx.handleMousePressed(e);
+                nyx.checkAttack(enemies);
+            }
+        });
+
+        initPauseMenu(); // dacă ai extras codul într-o metodă
+        startAnimationTimer(); // dacă ai extras timerul într-o metodă
+    }
+
+    private void initPauseMenu() {
+        pauseMenu = new PauseMenuPanel(
+                // Resume
+                () -> {
+                    pauseMenu.setVisible(false);
+                    requestFocusInWindow();
+                },
+                // Main Menu
+                () -> {
+                    parentFrame.dispose();
+                    new MainMenu();
+                },
+                // Save
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    db.saveGame(nyx, enemies, mapId);
+                    db.close();
+                    JOptionPane.showMessageDialog(this, "Game saved!");
+                    pauseMenu.requestFocusInWindow();
+                },
+                // Load
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    GameState state = db.loadLastGame();
+                    db.close();
+                    if (state != null) {
+                        this.nyx = state.getNyx();
+                        this.enemies = state.getEnemies();
+                        nyx.setWalkableTiles(List.of(1567));
+                        nyx.setRepaintCallback(this::repaint);
+                        JOptionPane.showMessageDialog(this, "Game loaded!");
+                        pauseMenu.requestFocusInWindow();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No saved game found.");
+                    }
+                },
+                () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
+                () -> { System.exit(0); }
+        );
+
+        pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+        pauseMenu.setVisible(false);
+        add(pauseMenu);
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+            }
+        });
+    }
+
+    private void startAnimationTimer() {
+        new Timer(120, e -> {
+            nyx.update(layer1, layer1, enemies);
+
+            int nyxX = nyx.getX();
+            int nyxY = nyx.getY();
+
+            for (Enemy enemy : enemies) {
+                enemy.updateAnimation();
+            }
+
             repaint();
         }).start();
     }

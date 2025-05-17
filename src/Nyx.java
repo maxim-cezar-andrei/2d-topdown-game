@@ -126,7 +126,7 @@ public class Nyx {
                                 && y == enemy.getY()
                                 && attackHitbox.intersects(enemy.getHitbox())) {
                             enemy.die();
-                            enemy.updateAnimation(); // ✅ adaugă dacă vrei instant vizual
+                            enemy.updateAnimation();
                             System.out.println("Inamic lovit!");
                         }
                     }
@@ -139,7 +139,7 @@ public class Nyx {
                 }
             }
 
-            repaintCallback.run(); // vezi PAS 4
+            repaintCallback.run();
         });
         animationTimer.start();
     }

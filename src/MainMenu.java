@@ -105,26 +105,34 @@ class MainMenu extends JFrame {
 
             if (state != null) {
                 int mapId = state.getMapId();
-                JFrame frame = this; // ← dacă clasa ta extinde JFrame
-                switch (mapId) {
-                    case 0 -> frame.setContentPane(new GameMap(frame, state));
-                    case 1 -> frame.setContentPane(new GameMap1(frame, state));
-                    case 2 -> frame.setContentPane(new GameMap2(frame, state));
-                    case 3 -> frame.setContentPane(new GameMap3(frame, state));
-                    default -> {
-                        JOptionPane.showMessageDialog(null, "Map ID invalid.");
-                        return;
-                    }
-                }
+                System.out.println("Map ID loaded: " + mapId);
 
-                frame.revalidate();
-                frame.repaint();
-                SwingUtilities.invokeLater(() -> frame.getContentPane().requestFocusInWindow());
-                dispose(); // închide meniul principal dacă e cazul
+                JFrame gameFrame = new JFrame("Shadow Heist");
+                gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                gameFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                gameFrame.setUndecorated(true);
+
+
+                JPanel mapPanel = switch (mapId) {
+                    case 0 -> new GameMap(gameFrame, state);
+                    case 1 -> new GameMap1(gameFrame, state);
+                    case 2 -> new GameMap2(gameFrame, state);
+                    case 3 -> new GameMap3(gameFrame, state);
+                    default -> null;
+                };
+
+                if (mapPanel != null) {
+                    gameFrame.setContentPane(mapPanel);
+                    gameFrame.setVisible(true); // 👈 IMPORTANT
+                    dispose(); // închide meniul
+                } else {
+                    JOptionPane.showMessageDialog(null, "Map ID invalid.");
+                }
             } else {
                 JOptionPane.showMessageDialog(null, "No saved game found.");
             }
         });
+
     }
 
     private JButton createStyledButton(String text, Font font) {

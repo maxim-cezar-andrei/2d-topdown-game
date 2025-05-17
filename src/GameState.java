@@ -8,6 +8,7 @@ public class GameState {
     public GameState(Nyx nyx, List<Enemy> enemies, int mapId) {
         this.nyx = nyx;
         this.enemies = enemies;
+        this.mapId = mapId;
     }
 
     public Nyx getNyx() {

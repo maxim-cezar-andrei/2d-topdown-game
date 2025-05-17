@@ -75,7 +75,7 @@ class GameMap extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, 0);
+                    db.saveGame(nyx, enemies, mapId);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -131,6 +131,109 @@ class GameMap extends JPanel implements KeyListener {
         }).start();
     }
 
+
+
+    public GameMap(JFrame parentFrame, GameState state) {
+        this.parentFrame = parentFrame;
+        this.nyx = state.getNyx();
+        this.enemies = state.getEnemies();
+        this.mapId = 0;
+
+        tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
+        layer1 = loadCSV("assets/maps/harta_principala._Tile Layer 1.csv");
+        layer2 = loadCSV("assets/maps/harta_principala._Tile Layer 2.csv");
+
+        nyx.setWalkableTiles(List.of(2, 17));
+        nyx.setRepaintCallback(this::repaint);
+
+        setLayout(null);
+        setFocusable(true);
+        requestFocusInWindow();
+        addKeyListener(this);
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                nyx.handleMousePressed(e);
+                nyx.checkAttack(enemies);
+            }
+        });
+
+        // restul rămâne la fel (pauseMenu, timer etc.)
+        initPauseMenu();
+        startAnimationTimer();
+    }
+
+    private void initPauseMenu() {
+        pauseMenu = new PauseMenuPanel(
+                // Resume
+                () -> {
+                    pauseMenu.setVisible(false);
+                    requestFocusInWindow();
+                },
+                // Main Menu
+                () -> {
+                    parentFrame.dispose();
+                    new MainMenu();
+                },
+                // Save
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    db.saveGame(nyx, enemies, mapId);
+                    db.close();
+                    JOptionPane.showMessageDialog(this, "Game saved!");
+                    pauseMenu.requestFocusInWindow();
+                },
+                // Load
+                () -> {
+                    DataBaseManager db = new DataBaseManager();
+                    GameState state = db.loadLastGame();
+                    db.close();
+                    if (state != null) {
+                        this.nyx = state.getNyx();
+                        this.enemies = state.getEnemies();
+                        nyx.setWalkableTiles(List.of(2, 17));
+                        nyx.setRepaintCallback(this::repaint);
+                        JOptionPane.showMessageDialog(this, "Game loaded!");
+                        pauseMenu.requestFocusInWindow();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "No saved game found.");
+                    }
+                },
+                () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
+                () -> { System.exit(0); }
+        );
+
+        pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+        pauseMenu.setVisible(false);
+        add(pauseMenu);
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                pauseMenu.setBounds(0, 0, getWidth(), getHeight());
+            }
+        });
+    }
+
+    private void startAnimationTimer() {
+        new Timer(120, e -> {
+            nyx.update(layer1, layer2, enemies);
+
+            int nyxX = nyx.getX();
+            int nyxY = nyx.getY();
+
+            showLevel1Message = (nyxX == LEVEL1_TRIGGER_X && nyxY == LEVEL1_TRIGGER_Y);
+            showLevel2Message = (nyxX == LEVEL2_TRIGGER_X && nyxY == LEVEL2_TRIGGER_Y);
+            showLevel3Message = (nyxX == LEVEL3_TRIGGER_X && nyxY == LEVEL3_TRIGGER_Y);
+
+            for (Enemy enemy : enemies) {
+                enemy.updateAnimation();
+            }
+
+            repaint();
+        }).start();
+    }
 
 
     private int[][] loadCSV(String path) {
