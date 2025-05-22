@@ -63,6 +63,7 @@ class GameMap extends JPanel implements KeyListener {
             public void mousePressed(MouseEvent e) {
                 nyx.handleMousePressed(e);
                 nyx.checkAttack(enemies);
+                repaint();
             }
         });
 
@@ -124,7 +125,17 @@ class GameMap extends JPanel implements KeyListener {
             showLevel2Message = (nyxX == LEVEL2_TRIGGER_X && nyxY == LEVEL2_TRIGGER_Y);
             showLevel3Message = (nyxX == LEVEL3_TRIGGER_X && nyxY == LEVEL3_TRIGGER_Y);
 
+
             for (Enemy enemy : enemies) {
+                enemy.Proximity(nyx.getX(), nyx.getY());
+                if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
+                    if (enemy.canAttack()) {
+                        nyx.takeDamage();           // se ocupă singur de cooldown
+                        enemy.startAttack();        // animatie vizuală
+                        enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+                    }
+                }
+                enemy.updateDirection(nyx.getX());
                 enemy.updateAnimation();
             }
             repaint();
@@ -227,10 +238,19 @@ class GameMap extends JPanel implements KeyListener {
             showLevel2Message = (nyxX == LEVEL2_TRIGGER_X && nyxY == LEVEL2_TRIGGER_Y);
             showLevel3Message = (nyxX == LEVEL3_TRIGGER_X && nyxY == LEVEL3_TRIGGER_Y);
 
+
             for (Enemy enemy : enemies) {
+                enemy.Proximity(nyx.getX(), nyx.getY());
+                if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
+                    if (enemy.canAttack()) {
+                        nyx.takeDamage();           // se ocupă singur de cooldown
+                        enemy.startAttack();        // animatie vizuală
+                        enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+                    }
+                }
+                enemy.updateDirection(nyx.getX());
                 enemy.updateAnimation();
             }
-
             repaint();
         }).start();
     }
@@ -386,6 +406,7 @@ class GameMap extends JPanel implements KeyListener {
 
 
         nyx.handleKeyPressed(e);
+        repaint();
     }
 
     @Override

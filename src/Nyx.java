@@ -52,7 +52,7 @@ public class Nyx {
 
     private List<Integer> walkableTiles = new ArrayList<>();
 
-
+    private int health = 5;
 
     public Nyx(int startX, int startY, List<Enemy> enemies)
     {
@@ -138,8 +138,8 @@ public class Nyx {
                     break;
                 }
             }
-
             repaintCallback.run();
+
         });
         animationTimer.start();
     }
@@ -199,7 +199,11 @@ public class Nyx {
             case 's' -> sPressed = true;
             case 'd' -> { dPressed = true; facingRight = true; }
         }
-        state = STATE_RUN;
+        if (state != STATE_ATTACK) {
+            state = STATE_RUN;
+            currentFrame = 0;
+        }
+
     }
 
     public void handleKeyReleased(KeyEvent e) {
@@ -209,9 +213,11 @@ public class Nyx {
             case 's' -> sPressed = false;
             case 'd' -> dPressed = false;
         }
-        if (!isMoving() && state != STATE_ATTACK) state = STATE_IDLE;
+        if (!isMoving() && state != STATE_ATTACK)
+            state = STATE_IDLE;
     }
 
+    
     public void handleMousePressed(MouseEvent e) {
         if (SwingUtilities.isLeftMouseButton(e)) {
             currentFrame = 0;
@@ -226,6 +232,15 @@ public class Nyx {
                 enemy.updateAnimation();
                 System.out.println("Inamic lovit!");
             }
+        }
+    }
+
+    public void takeDamage() {
+        health--;
+        System.out.println("Nyx a fost lovit! HP rămas: " + health);
+        if (health <= 0) {
+            System.out.println("Nyx a murit!");
+            // aici poți adăuga Game Over sau oprire joc
         }
     }
 
