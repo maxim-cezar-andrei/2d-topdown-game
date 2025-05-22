@@ -404,7 +404,6 @@ class GameMap extends JPanel implements KeyListener {
             return;
         }
 
-
         nyx.handleKeyPressed(e);
         repaint();
     }
