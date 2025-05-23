@@ -32,14 +32,14 @@ public class Enemy {
     private final int attackFrameCount = 5;
     private int attackCurrentFrame = 0;
     private int attackCooldown = 0;
-    private final int ATTACK_COOLDOWN_MAX = 30;
+    private final int ATTACK_COOLDOWN_MAX = 15;
 
 
     private boolean facingRight = true;
 
     private boolean nyxInRange = false;
     private int inRangeCounter = 0;
-    private final int ATTACK_DELAY_BEFORE_FIRST_HIT = 30;
+    private final int ATTACK_DELAY_BEFORE_FIRST_HIT = 5;
 
 
     public Enemy(int x, int y) {
@@ -102,10 +102,12 @@ public class Enemy {
         g.drawImage(spriteToDraw, drawX, drawY, null);
 
         // Desenează hitbox-ul pentru debug (opțional)
+        /*
         g.setColor(Color.RED);
         g.draw(hitbox);
         g.setColor(new Color(255, 0, 0, 50));
         g.fill(hitbox);
+        */
     }
 
     public void updateAnimation() {

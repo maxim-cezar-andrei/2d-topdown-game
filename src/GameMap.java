@@ -54,6 +54,7 @@ class GameMap extends JPanel implements KeyListener {
         enemies.add(new Enemy(6, 9));
         enemies.add(new Enemy(5, 10));
 
+
         setLayout(null);
         setFocusable(true);
         requestFocusInWindow();
@@ -126,18 +127,21 @@ class GameMap extends JPanel implements KeyListener {
             showLevel3Message = (nyxX == LEVEL3_TRIGGER_X && nyxY == LEVEL3_TRIGGER_Y);
 
 
-            for (Enemy enemy : enemies) {
-                enemy.Proximity(nyx.getX(), nyx.getY());
-                if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
-                    if (enemy.canAttack()) {
-                        nyx.takeDamage();           // se ocupă singur de cooldown
-                        enemy.startAttack();        // animatie vizuală
-                        enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+            if (!nyx.isNyxDead()) {
+                for (Enemy enemy : enemies) {
+                    enemy.Proximity(nyx.getX(), nyx.getY());
+                    if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
+                        if (enemy.canAttack()) {
+                            nyx.takeDamage();           // se ocupă singur de cooldown
+                            enemy.startAttack();        // animatie vizuală
+                            enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+                        }
                     }
+                    enemy.updateDirection(nyx.getX());
+                    enemy.updateAnimation();
                 }
-                enemy.updateDirection(nyx.getX());
-                enemy.updateAnimation();
             }
+
             repaint();
         }).start();
     }
@@ -252,6 +256,8 @@ class GameMap extends JPanel implements KeyListener {
                 enemy.updateAnimation();
             }
             repaint();
+
+
         }).start();
     }
 
