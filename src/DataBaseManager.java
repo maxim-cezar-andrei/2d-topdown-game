@@ -2,6 +2,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static javax.management.remote.JMXConnectorFactory.connect;
+
 public class DataBaseManager {
     private static final String DB_URL = "jdbc:sqlite:shadow_heist.db";
     private Connection conn;
@@ -21,7 +23,8 @@ public class DataBaseManager {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nyx_x INTEGER,
                 nyx_y INTEGER,
-                map_id INTEGER
+                map_id INTEGER,
+                score INTEGER
             );
         """;
 
@@ -42,13 +45,14 @@ public class DataBaseManager {
         }
     }
 
-    public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId) {
+    public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId, int score) {
         try {
-            String insertGame = "INSERT INTO game_state(nyx_x, nyx_y, map_id) VALUES (?, ?, ?)";
+            String insertGame = "INSERT INTO game_state(nyx_x, nyx_y, map_id, score) VALUES (?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertGame, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, nyx.getX());
                 ps.setInt(2, nyx.getY());
                 ps.setInt(3, mapId);
+                ps.setInt(4, score);
                 ps.executeUpdate();
 
                 ResultSet rs = ps.getGeneratedKeys();
@@ -70,6 +74,12 @@ public class DataBaseManager {
             e.printStackTrace();
         }
     }
+
+    // Supraincarcare pentru cazurile în care nu dorim să salvăm scorul
+    public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId) {
+        saveGame(nyx, enemies, mapId, 0); // scor implicit: 0
+    }
+
 
     public GameState loadLastGame() {
         try {
@@ -97,7 +107,7 @@ public class DataBaseManager {
                         }
                     }
 
-                    Nyx nyx = new Nyx(nyxX, nyxY, enemies);  // Constructorul tău deja acceptă aceste date
+                    Nyx nyx = new Nyx(nyxX, nyxY, enemies);
                     return new GameState(nyx, enemies, mapId);
                 }
             }
@@ -105,6 +115,27 @@ public class DataBaseManager {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public int getTotalScore() {
+        int total = 0;
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT SUM(score) FROM game_state")) {
+            if (rs.next()) {
+                total = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
+
+    public void resetTotalScore() {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("UPDATE game_state SET score = 0");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public void close() {

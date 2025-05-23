@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,10 @@ class GameMap1 extends JPanel implements KeyListener {
     private int cameraX = 0;
     private int cameraY = 0;
 
+    private static final int NEXT_LEVEL_X = 2;
+    private static final int NEXT_LEVEL_Y = 2;
+    private boolean showNextLevelMessage = false;
+
     private final int RETURN_TRIGGER_X = 6;
     private final int RETURN_TRIGGER_Y = 2;
     private boolean showReturnMessage = false;
@@ -27,6 +32,12 @@ class GameMap1 extends JPanel implements KeyListener {
     private Nyx nyx;
     private List<Enemy> enemies = new ArrayList<>();
     private int mapId = 1;
+
+    private List<Collectible> collectibles = new ArrayList<>();
+    private BufferedImage chipSprite;
+    private int score = 0;
+
+    private int totalScore = 0;
 
     public GameMap1(JFrame parentFrame) {
         this.parentFrame = parentFrame;
@@ -39,8 +50,23 @@ class GameMap1 extends JPanel implements KeyListener {
 
         nyx = new Nyx(1, 1, enemies);
         nyx.setWalkableTiles(List.of(1567));
-
         nyx.setRepaintCallback(this::repaint);
+
+        try {
+            chipSprite = javax.imageio.ImageIO.read(new File("assets/sprites/Collectibles/crypto_chip_sprite_32x32.png"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Poziții exemplu (adaptează coordonatele după hartă)
+        collectibles.add(new Collectible(10, 5, chipSprite));
+        collectibles.add(new Collectible(15, 8, chipSprite));
+        collectibles.add(new Collectible(20, 12, chipSprite));
+
+        DataBaseManager db2 = new DataBaseManager();
+        db2.resetTotalScore();
+        totalScore = db2.getTotalScore();
+        db2.close();
 
         setLayout(null);
         setFocusable(true);
@@ -64,7 +90,7 @@ class GameMap1 extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId);
+                    db.saveGame(nyx, enemies, mapId, score);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -102,14 +128,15 @@ class GameMap1 extends JPanel implements KeyListener {
             }
         });
 
-        new Timer(120, e -> {
-            nyx.update(layer1, layer1, enemies);
-            int nyxX = nyx.getX();
-            int nyxY = nyx.getY();
-            showReturnMessage = (nyxX == RETURN_TRIGGER_X && nyxY == RETURN_TRIGGER_Y);
-            for (Enemy enemy : enemies) enemy.updateAnimation();
-            repaint();
-        }).start();
+//        new Timer(120, e -> {
+//            nyx.update(layer1, layer1, enemies);
+//            int nyxX = nyx.getX();
+//            int nyxY = nyx.getY();
+//            showReturnMessage = (nyxX == RETURN_TRIGGER_X && nyxY == RETURN_TRIGGER_Y);
+//            for (Enemy enemy : enemies) enemy.updateAnimation();
+//            repaint();
+//        }).start();
+        startAnimationTimer();
     }
 
     public GameMap1(JFrame parentFrame, GameState state) {
@@ -117,6 +144,11 @@ class GameMap1 extends JPanel implements KeyListener {
         this.nyx = state.getNyx();
         this.enemies = state.getEnemies();
         this.mapId = 1;
+
+        DataBaseManager db2 = new DataBaseManager();
+        db2.resetTotalScore();
+        totalScore = db2.getTotalScore();
+        db2.close();
 
         this.tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
         this.layer1 = loadCSV("assets/maps/nivel1.csv");
@@ -137,8 +169,8 @@ class GameMap1 extends JPanel implements KeyListener {
             }
         });
 
-        initPauseMenu(); // dacă ai extras codul într-o metodă
-        startAnimationTimer(); // dacă ai extras timerul într-o metodă
+        initPauseMenu();
+        startAnimationTimer();
     }
 
     private void initPauseMenu() {
@@ -156,7 +188,7 @@ class GameMap1 extends JPanel implements KeyListener {
                 // Save
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId);
+                    db.saveGame(nyx, enemies, mapId, score);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -197,8 +229,17 @@ class GameMap1 extends JPanel implements KeyListener {
         new Timer(120, e -> {
             nyx.update(layer1, layer1, enemies);
 
+            Rectangle nyxHitbox = nyx.getHitbox();
+            for (Collectible c : collectibles) {
+                if (!c.isCollected() && c.checkCollision(nyxHitbox)) {
+                    score += c.getPoints();
+                }
+            }
+
             int nyxX = nyx.getX();
             int nyxY = nyx.getY();
+
+            showNextLevelMessage = (nyxX == 2 && nyxY == 2);
 
             for (Enemy enemy : enemies) {
                 enemy.updateAnimation();
@@ -271,6 +312,16 @@ class GameMap1 extends JPanel implements KeyListener {
         g2d.translate(-cameraX, -cameraY);
 
         drawLayer(g2d, layer1);
+
+        for (Collectible c : collectibles) {
+            c.draw(g2d);
+            if (!c.isCollected()) {
+                g2d.setColor(Color.YELLOW);
+                Rectangle chipHitbox = new Rectangle(c.getX() * 32, c.getY() * 32, 32, 32);
+                g2d.drawRect(chipHitbox.x, chipHitbox.y, chipHitbox.width, chipHitbox.height);
+            }
+        }
+
         nyx.draw(g2d);
 
         for (Enemy enemy : enemies) {
@@ -285,6 +336,18 @@ class GameMap1 extends JPanel implements KeyListener {
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
             g2d.drawString("Press E to return to main map", cameraX + 50, cameraY + 50);
         }
+
+        if (showNextLevelMessage) {
+            g2d.setColor(Color.CYAN);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press E if you want to advance to next level", cameraX + 50, cameraY + 70);
+        }
+
+        // Desenare scor
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        g.drawString("Score: " + score, 20, 30);
+        g.drawString("Total: " + totalScore, cameraX + 20, cameraY + 50);
 
         g2d.dispose();
     }
@@ -301,6 +364,21 @@ class GameMap1 extends JPanel implements KeyListener {
             else requestFocusInWindow();
             repaint();
             return;
+        }
+
+        if (e.getKeyChar() == 'e' && showNextLevelMessage) {
+            DataBaseManager db = new DataBaseManager();
+            db.saveGame(nyx, enemies, mapId, score);
+            db.close();
+
+            GameMap2 nextMap = new GameMap2(parentFrame);
+            nextMap.setFocusable(true);
+            nextMap.requestFocusInWindow();
+            parentFrame.setContentPane(nextMap);
+            parentFrame.revalidate();
+            parentFrame.pack();
+            parentFrame.repaint();
+            SwingUtilities.invokeLater(nextMap::requestFocusInWindow);
         }
 
         if (e.getKeyChar() == 'e' && showReturnMessage) {
