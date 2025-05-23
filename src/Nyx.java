@@ -36,13 +36,20 @@ public class Nyx {
     private Image[] idleFrames;
     private Image[] runFrames;
     private Image[] attackFrames;
+    private Image[] deathFrames;
 
     private int currentFrame = 0;
+    private int currentDeathFrame = 0;
+
     private final int FRAME_WIDTH = 200;
     private final int FRAME_HEIGHT = 200;
+
     private final int IDLE_FRAMES = 4;
     private final int RUN_FRAMES = 8;
     private final int ATTACK_FRAMES = 4;
+    private final int DEATH_FRAMES = 7;
+
+    private boolean isDying = false;
 
     private Timer animationTimer;
     private Rectangle hitbox;
@@ -73,10 +80,13 @@ public class Nyx {
             BufferedImage idleSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Idle.png"));
             BufferedImage runSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Run.png"));
             BufferedImage attackSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Attack2.png"));
+            BufferedImage deathSheet = ImageIO.read(new File("assets/sprites/NyxSprites/Death.png"));
+
 
             idleFrames = new Image[IDLE_FRAMES];
             runFrames = new Image[RUN_FRAMES];
             attackFrames = new Image[ATTACK_FRAMES];
+            deathFrames = new Image[DEATH_FRAMES];
 
             for (int i = 0; i < IDLE_FRAMES; i++)
                 idleFrames[i] = idleSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT).getScaledInstance(150, 140, Image.SCALE_SMOOTH);
@@ -86,6 +96,9 @@ public class Nyx {
 
             for (int i = 0; i < ATTACK_FRAMES; i++)
                 attackFrames[i] = attackSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT).getScaledInstance(150, 140, Image.SCALE_SMOOTH);
+
+            for (int i = 0; i < DEATH_FRAMES; i++)
+                deathFrames[i] = deathSheet.getSubimage(i * FRAME_WIDTH, 0, FRAME_WIDTH, FRAME_HEIGHT).getScaledInstance(150, 140, Image.SCALE_SMOOTH);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -98,6 +111,15 @@ public class Nyx {
 
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
+
+            if (isDying) {
+                if (currentDeathFrame < DEATH_FRAMES - 1) {
+                    currentDeathFrame++;
+                }
+                repaintCallback.run(); // dacă e în Timer
+                return;
+            }
+
             currentFrame++;
 
             switch (state) {
@@ -135,7 +157,7 @@ public class Nyx {
                         currentFrame = 0;
                         state = (wPressed || aPressed || sPressed || dPressed) ? STATE_RUN : STATE_IDLE;
                     }
-                    break;
+
                 }
             }
             repaintCallback.run();
@@ -171,7 +193,22 @@ public class Nyx {
     }
 
     public void draw(Graphics2D g2d) {
-        Image sprite = switch (state) {
+        Image sprite;
+
+        if (isDying) {
+            sprite = deathFrames[Math.min(currentDeathFrame, DEATH_FRAMES - 1)];
+
+            if (sprite != null) {
+                if (!facingRight) sprite = flipImageHorizontally(sprite);
+                int drawX = x * TILE_SIZE + offsetX + (TILE_SIZE - 150) / 2;
+                int drawY = y * TILE_SIZE + offsetY + (TILE_SIZE - 150) / 2;
+                g2d.drawImage(sprite, drawX, drawY, null);
+            }
+
+            return; // moartea oprește orice altceva
+        }
+
+        sprite = switch (state) {
             case STATE_IDLE -> idleFrames[currentFrame % IDLE_FRAMES];
             case STATE_RUN -> runFrames[currentFrame % RUN_FRAMES];
             case STATE_ATTACK -> attackFrames[Math.min(currentFrame, ATTACK_FRAMES - 1)];
@@ -184,8 +221,10 @@ public class Nyx {
             int drawY = y * TILE_SIZE + offsetY + (TILE_SIZE - 150) / 2;
             g2d.drawImage(sprite, drawX, drawY, null);
         }
+
         g2d.setColor(Color.GREEN);
         g2d.draw(hitbox);
+
         if (state == STATE_ATTACK) {
             g2d.setColor(Color.BLUE);
             g2d.draw(attackHitbox);
@@ -217,7 +256,7 @@ public class Nyx {
             state = STATE_IDLE;
     }
 
-    
+
     public void handleMousePressed(MouseEvent e) {
         if (SwingUtilities.isLeftMouseButton(e)) {
             currentFrame = 0;
@@ -236,12 +275,19 @@ public class Nyx {
     }
 
     public void takeDamage() {
+        if (isDying) return;
+
         health--;
-        System.out.println("Nyx a fost lovit! HP rămas: " + health);
+        System.out.println("Nyx a fost lovit! HP ramas: " + health);
+
         if (health <= 0) {
+            isDying = true;
+            currentDeathFrame = 0;
             System.out.println("Nyx a murit!");
-            // aici poți adăuga Game Over sau oprire joc
         }
+    }
+    public boolean isNyxDead() {
+        return isDying && currentDeathFrame >= DEATH_FRAMES - 1;
     }
 
     public Rectangle getHitbox() {
