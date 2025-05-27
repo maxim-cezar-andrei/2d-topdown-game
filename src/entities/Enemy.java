@@ -1,3 +1,5 @@
+package entities;
+
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
@@ -17,6 +19,7 @@ public class Enemy {
     private final int spriteSize = 64;
 
     private Rectangle hitbox;
+    private final int TILE_SIZE = 32;
     private final int HITBOX_WIDTH = 28;
     private final int HITBOX_HEIGHT = 28;
     private final int HITBOX_OFFSET_X = 2;
@@ -46,10 +49,7 @@ public class Enemy {
         this.x = x;
         this.y = y;
         loadIdleSprites();
-
-        int px = x * 32 + HITBOX_OFFSET_X;
-        int py = y * 32 + HITBOX_OFFSET_Y;
-        hitbox = new Rectangle(px, py, HITBOX_WIDTH, HITBOX_HEIGHT);
+        initHitbox();
     }
 
     private void loadIdleSprites() {
@@ -102,12 +102,11 @@ public class Enemy {
         g.drawImage(spriteToDraw, drawX, drawY, null);
 
         // Desenează hitbox-ul pentru debug (opțional)
-        /*
         g.setColor(Color.RED);
         g.draw(hitbox);
         g.setColor(new Color(255, 0, 0, 50));
         g.fill(hitbox);
-        */
+
     }
 
     public void updateAnimation() {
@@ -166,9 +165,9 @@ public class Enemy {
 
     public void updateDirection(int nyxX) {
         if (nyxX < x) {
-            facingRight = false; // Nyx e în stânga
+            facingRight = false; // entities.Nyx e în stânga
         } else {
-            facingRight = true;  // Nyx e în dreapta sau pe aceeași poziție
+            facingRight = true;  // entities.Nyx e în dreapta sau pe aceeași poziție
         }
     }
 
@@ -184,12 +183,20 @@ public class Enemy {
         attackCooldown = ATTACK_COOLDOWN_MAX;
     }
 
+    private void initHitbox() {
+        hitbox = new Rectangle(x * TILE_SIZE + HITBOX_OFFSET_X, y * TILE_SIZE + HITBOX_OFFSET_Y, HITBOX_WIDTH, HITBOX_HEIGHT);
+    }
+
     public void updateHitbox(int TILE_SIZE) {
-        hitbox.setLocation(x * 32 + HITBOX_OFFSET_X, y * 32 + HITBOX_OFFSET_Y);
+        hitbox.setLocation(x * TILE_SIZE + HITBOX_OFFSET_X, y * TILE_SIZE + HITBOX_OFFSET_Y);
     }
 
     public Rectangle getHitbox() {
-        return hitbox;
+        return new Rectangle(
+                x * TILE_SIZE + HITBOX_OFFSET_X,
+                y * TILE_SIZE + HITBOX_OFFSET_Y,
+                HITBOX_WIDTH, HITBOX_HEIGHT
+        );
     }
 
     public boolean isDead() {
@@ -210,4 +217,4 @@ public class Enemy {
         return y;
     }
 
-}  // end Enemy
+}

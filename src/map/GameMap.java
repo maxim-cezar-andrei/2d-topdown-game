@@ -1,15 +1,23 @@
+package map;
+
+import entities.Enemy;
+import entities.Nyx;
+import main.DataBaseManager;
+import main.GameState;
+import main.MainMenu;
+import ui.PauseMenuPanel;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-class GameMap2 extends JPanel implements KeyListener {
+public class GameMap extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
-    private final int TILES_PER_ROW = 74;
+    private final int TILES_PER_ROW = 8;
     private Image tileset;
 
     private final JFrame parentFrame;
@@ -18,70 +26,54 @@ class GameMap2 extends JPanel implements KeyListener {
     private boolean menuVisible = false;
 
     private int[][] layer1;
+    private int[][] layer2;
+
     private int cameraX = 0;
     private int cameraY = 0;
 
-    private static final int NEXT_LEVEL_X = 2;
-    private static final int NEXT_LEVEL_Y = 2;
-    private boolean showNextLevelMessage = false;
+    private final int LEVEL1_TRIGGER_X =22;
+    private final int LEVEL1_TRIGGER_Y = 5;
+    private boolean showLevel1Message = false;
 
-    private final int RETURN_TRIGGER_X = 6;
-    private final int RETURN_TRIGGER_Y = 2;
-    private boolean showReturnMessage = false;
+    private final int LEVEL2_TRIGGER_X = 1;
+    private final int LEVEL2_TRIGGER_Y = 9;
+    private boolean showLevel2Message = false;
+
+    private final int LEVEL3_TRIGGER_X = 9;
+    private final int LEVEL3_TRIGGER_Y = 16;
+    private boolean showLevel3Message = false;
 
     private Nyx nyx;
     private List<Enemy> enemies = new ArrayList<>();
-    private int mapId = 2;
+    private int mapId = 0;
 
-    private List<Collectible> collectibles = new ArrayList<>();
-    private BufferedImage chipSprite;
-    private int score = 0;
-    private int totalScore = 0;
-
-
-    public GameMap2(JFrame parentFrame) {
+    public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
+        tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
+        layer1 = loadCSV("assets/maps/harta_principala._Tile Layer 1.csv");
+        layer2 = loadCSV("assets/maps/harta_principala._Tile Layer 2.csv");
 
-        tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
-        layer1 = loadCSV("assets/maps/nivel2.csv");
+        nyx = new Nyx(6, 2, enemies);
+        nyx.setWalkableTiles(List.of(2, 17));
 
-        enemies.add(new Enemy(5, 5));
-        enemies.add(new Enemy(10, 8));
-        enemies.add(new Enemy(22, 16));
-        enemies.add(new Enemy(22, 17));
-        enemies.add(new Enemy(22, 18));
-
-
-
-        nyx = new Nyx(1, 1, enemies);
         nyx.setRepaintCallback(this::repaint);
-        nyx.setWalkableTiles(List.of(225));
 
-        try {
-            chipSprite = javax.imageio.ImageIO.read(new File("assets/sprites/Collectibles/crypto_chip_sprite_32x32.png"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        // Poziții exemplu (adaptează coordonatele după hartă)
-        collectibles.add(new Collectible(10, 5, chipSprite));
-        collectibles.add(new Collectible(15, 8, chipSprite));
-        collectibles.add(new Collectible(20, 12, chipSprite));
+        enemies.add(new Enemy(8, 8));
+        enemies.add(new Enemy(6, 9));
+        enemies.add(new Enemy(5, 10));
 
-        DataBaseManager db2 = new DataBaseManager();
-        totalScore = db2.getTotalScore();
-        db2.close();
 
         setLayout(null);
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
-
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 nyx.handleMousePressed(e);
                 nyx.checkAttack(enemies);
+                repaint();
             }
         });
 
@@ -89,12 +81,12 @@ class GameMap2 extends JPanel implements KeyListener {
                 () -> {
                     pauseMenu.setVisible(false);
                     menuVisible = false;
-                    requestFocusInWindow();  // revenim la joc
+                    requestFocusInWindow();
                 },
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId, score);
+                    db.saveGame(nyx, enemies, mapId);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -107,7 +99,7 @@ class GameMap2 extends JPanel implements KeyListener {
                     if (state != null) {
                         this.nyx = state.getNyx();
                         this.enemies = state.getEnemies();
-                        nyx.setWalkableTiles(List.of(225));
+                        nyx.setWalkableTiles(List.of(2, 17));
                         nyx.setRepaintCallback(this::repaint);
                         JOptionPane.showMessageDialog(this, "Game loaded!");
                         pauseMenu.requestFocusInWindow();
@@ -118,6 +110,7 @@ class GameMap2 extends JPanel implements KeyListener {
                 () -> { JOptionPane.showMessageDialog(this, "Options coming soon!"); },
                 () -> { System.exit(0); }
         );
+
 
 
         pauseMenu.setBounds(0, 0, getWidth(), getHeight());
@@ -132,23 +125,49 @@ class GameMap2 extends JPanel implements KeyListener {
             }
         });
 
-        startAnimationTimer();
+        new Timer(120, e -> {
+            nyx.update(layer1, layer2, enemies);
+
+            int nyxX = nyx.getX();
+            int nyxY = nyx.getY();
+
+            showLevel1Message = (nyxX == LEVEL1_TRIGGER_X && nyxY == LEVEL1_TRIGGER_Y);
+            showLevel2Message = (nyxX == LEVEL2_TRIGGER_X && nyxY == LEVEL2_TRIGGER_Y);
+            showLevel3Message = (nyxX == LEVEL3_TRIGGER_X && nyxY == LEVEL3_TRIGGER_Y);
+
+
+            if (!nyx.isNyxDead()) {
+                for (Enemy enemy : enemies) {
+                    enemy.Proximity(nyx.getX(), nyx.getY());
+                    if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
+                        if (enemy.canAttack()) {
+                            nyx.takeDamage();           // se ocupă singur de cooldown
+                            enemy.startAttack();        // animatie vizuală
+                            enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+                        }
+                    }
+                    enemy.updateDirection(nyx.getX());
+                    enemy.updateAnimation();
+                }
+            }
+
+            repaint();
+        }).start();
     }
 
-    public GameMap2(JFrame parentFrame, GameState state) {
+
+
+    public GameMap(JFrame parentFrame, GameState state) {
         this.parentFrame = parentFrame;
         this.nyx = state.getNyx();
         this.enemies = state.getEnemies();
-        this.mapId = 2;
+        this.mapId = 0;
 
-        DataBaseManager db2 = new DataBaseManager();
-        totalScore = db2.getTotalScore();
-        db2.close();
+        tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
+        layer1 = loadCSV("assets/maps/harta_principala._Tile Layer 1.csv");
+        layer2 = loadCSV("assets/maps/harta_principala._Tile Layer 2.csv");
 
-        this.tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
-        this.layer1 = loadCSV("assets/maps/nivel2.csv");
-
-        nyx.setWalkableTiles(List.of(225));
+        nyx.setWalkableTiles(List.of(2, 17));
         nyx.setRepaintCallback(this::repaint);
 
         setLayout(null);
@@ -164,8 +183,9 @@ class GameMap2 extends JPanel implements KeyListener {
             }
         });
 
-        initPauseMenu(); // dacă ai extras codul într-o metodă
-        startAnimationTimer(); // dacă ai extras timerul într-o metodă
+        // restul rămâne la fel (pauseMenu, timer etc.)
+        initPauseMenu();
+        startAnimationTimer();
     }
 
     private void initPauseMenu() {
@@ -175,7 +195,7 @@ class GameMap2 extends JPanel implements KeyListener {
                     pauseMenu.setVisible(false);
                     requestFocusInWindow();
                 },
-                // Main Menu
+                // main.Main Menu
                 () -> {
                     parentFrame.dispose();
                     new MainMenu();
@@ -183,7 +203,7 @@ class GameMap2 extends JPanel implements KeyListener {
                 // Save
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId, score);
+                    db.saveGame(nyx, enemies, mapId);
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -196,7 +216,7 @@ class GameMap2 extends JPanel implements KeyListener {
                     if (state != null) {
                         this.nyx = state.getNyx();
                         this.enemies = state.getEnemies();
-                        nyx.setWalkableTiles(List.of(1567));
+                        nyx.setWalkableTiles(List.of(2, 17));
                         nyx.setRepaintCallback(this::repaint);
                         JOptionPane.showMessageDialog(this, "Game loaded!");
                         pauseMenu.requestFocusInWindow();
@@ -222,27 +242,34 @@ class GameMap2 extends JPanel implements KeyListener {
 
     private void startAnimationTimer() {
         new Timer(120, e -> {
-            nyx.update(layer1, layer1, enemies);
-
-            Rectangle nyxHitbox = nyx.getHitbox();
-            for (Collectible c : collectibles) {
-                if (!c.isCollected() && c.checkCollision(nyxHitbox)) {
-                    score += c.getPoints();
-                }
-            }
+            nyx.update(layer1, layer2, enemies);
 
             int nyxX = nyx.getX();
             int nyxY = nyx.getY();
 
-            showNextLevelMessage = (nyxX == 2 && nyxY == 2);
+            showLevel1Message = (nyxX == LEVEL1_TRIGGER_X && nyxY == LEVEL1_TRIGGER_Y);
+            showLevel2Message = (nyxX == LEVEL2_TRIGGER_X && nyxY == LEVEL2_TRIGGER_Y);
+            showLevel3Message = (nyxX == LEVEL3_TRIGGER_X && nyxY == LEVEL3_TRIGGER_Y);
+
 
             for (Enemy enemy : enemies) {
+                enemy.Proximity(nyx.getX(), nyx.getY());
+                if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
+                    if (enemy.canAttack()) {
+                        nyx.takeDamage();           // se ocupă singur de cooldown
+                        enemy.startAttack();        // animatie vizuală
+                        enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+                    }
+                }
+                enemy.updateDirection(nyx.getX());
                 enemy.updateAnimation();
             }
-
             repaint();
+
+
         }).start();
     }
+
 
     private int[][] loadCSV(String path) {
         List<int[]> rows = new ArrayList<>();
@@ -285,11 +312,8 @@ class GameMap2 extends JPanel implements KeyListener {
         int viewportWidth = parentFrame.getContentPane().getWidth();
         int viewportHeight = parentFrame.getContentPane().getHeight();
 
-        int nyxX = nyx.getX();
-        int nyxY = nyx.getY();
-
-        cameraX = nyxX * TILE_SIZE - viewportWidth / 2 + TILE_SIZE / 2;
-        cameraY = nyxY * TILE_SIZE - viewportHeight / 2 + TILE_SIZE / 2;
+        cameraX = 6 * TILE_SIZE - viewportWidth / 2 + TILE_SIZE / 2;
+        cameraY = 2 * TILE_SIZE - viewportHeight / 2 + TILE_SIZE / 2;
 
         cameraX = Math.max(0, Math.min(cameraX, mapWidth - viewportWidth));
         cameraY = Math.max(0, Math.min(cameraY, mapHeight - viewportHeight));
@@ -307,40 +331,35 @@ class GameMap2 extends JPanel implements KeyListener {
         g2d.translate(-cameraX, -cameraY);
 
         drawLayer(g2d, layer1);
+        drawLayer(g2d, layer2);
 
-        for (Collectible c : collectibles) {
-            c.draw(g2d);
-            if (!c.isCollected()) {
-                g2d.setColor(Color.YELLOW);
-                Rectangle chipHitbox = new Rectangle(c.getX() * 32, c.getY() * 32, 32, 32);
-                g2d.drawRect(chipHitbox.x, chipHitbox.y, chipHitbox.width, chipHitbox.height);
-            }
-        }
         nyx.draw(g2d);
 
         for (Enemy enemy : enemies) {
+            enemy.updateAnimation();
+            enemy.updateHitbox(TILE_SIZE);
             enemy.draw(g2d, TILE_SIZE);
+
             if (nyx.getHitbox().intersects(enemy.getHitbox())) {
                 System.out.println("Coliziune cu inamicul!");
             }
         }
 
-        if (showReturnMessage) {
+        if (showLevel1Message) {
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press E to return to main map", cameraX + 50, cameraY + 50);
+            g2d.drawString("Press 1 if you want to enter level 1", cameraX + 50, cameraY + 50);
         }
-
-        if (showNextLevelMessage) {
-            g2d.setColor(Color.CYAN);
+        if (showLevel2Message) {
+            g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
-            g2d.drawString("Press E if you want to advance to next level", cameraX + 50, cameraY + 70);
+            g2d.drawString("Press 2 if you want to enter level 2", cameraX + 50, cameraY + 50);
         }
-
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 20));
-        g.drawString("Score: " + score, 20, 30);
-        g.drawString("Total: " + totalScore, cameraX + 20, cameraY + 50);
+        if (showLevel3Message) {
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 16));
+            g2d.drawString("Press 3 if you want to enter level 3", cameraX + 50, cameraY + 50);
+        }
 
         g2d.dispose();
     }
@@ -353,40 +372,55 @@ class GameMap2 extends JPanel implements KeyListener {
         if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
             menuVisible = !menuVisible;
             pauseMenu.setVisible(menuVisible);
-            if (menuVisible) pauseMenu.requestFocusInWindow();
-            else requestFocusInWindow();
+
+            if (menuVisible) {
+                pauseMenu.requestFocusInWindow();
+            } else {
+                requestFocusInWindow();
+            }
+
             repaint();
             return;
         }
 
-        if (e.getKeyChar() == 'e' && showNextLevelMessage) {
-            DataBaseManager db = new DataBaseManager();
-            db.saveGame(nyx, enemies, mapId, score);
-            db.close();
-
-            GameMap3 nextMap = new GameMap3(parentFrame);
-            nextMap.setFocusable(true);
-            nextMap.requestFocusInWindow();
-            parentFrame.setContentPane(nextMap);
+        if (e.getKeyChar() == '1' && showLevel1Message) {
+            GameMap1 gameMap1 = new GameMap1(parentFrame);
+            gameMap1.setFocusable(true);
+            gameMap1.requestFocusInWindow();
+            parentFrame.setContentPane(gameMap1);
             parentFrame.revalidate();
             parentFrame.pack();
             parentFrame.repaint();
-            SwingUtilities.invokeLater(nextMap::requestFocusInWindow);
+            SwingUtilities.invokeLater(gameMap1::requestFocusInWindow);
+            return;
         }
 
-        if (e.getKeyChar() == 'e' && showReturnMessage) {
-            GameMap mainMap = new GameMap(parentFrame);
-            mainMap.setFocusable(true);
-            mainMap.requestFocusInWindow();
-            parentFrame.setContentPane(mainMap);
+        if (e.getKeyChar() == '2' && showLevel2Message) {
+            GameMap2 gameMap2 = new GameMap2(parentFrame);
+            gameMap2.setFocusable(true);
+            gameMap2.requestFocusInWindow();
+            parentFrame.setContentPane(gameMap2);
             parentFrame.revalidate();
             parentFrame.pack();
             parentFrame.repaint();
-            SwingUtilities.invokeLater(mainMap::requestFocusInWindow);
+            SwingUtilities.invokeLater(gameMap2::requestFocusInWindow);
+            return;
+        }
+
+        if (e.getKeyChar() == '3' && showLevel3Message) {
+            GameMap3 gameMap3 = new GameMap3(parentFrame);
+            gameMap3.setFocusable(true);
+            gameMap3.requestFocusInWindow();
+            parentFrame.setContentPane(gameMap3);
+            parentFrame.revalidate();
+            parentFrame.pack();
+            parentFrame.repaint();
+            SwingUtilities.invokeLater(gameMap3::requestFocusInWindow);
             return;
         }
 
         nyx.handleKeyPressed(e);
+        repaint();
     }
 
     @Override

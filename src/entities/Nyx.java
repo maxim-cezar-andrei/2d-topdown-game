@@ -1,3 +1,5 @@
+package entities;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -59,12 +61,19 @@ public class Nyx {
 
     private List<Integer> walkableTiles = new ArrayList<>();
 
-    private int health = 5;
+    private int health = 3;
+    private final int maxHealth = 3;
+    private long lastHitTime = 0;
+    private final int invulnTime = 1000; // ms
 
-    public Nyx(int startX, int startY, List<Enemy> enemies)
+    private int dx = 0;
+    private int dy = 0;
+
+
+    public Nyx(int x, int y, List<Enemy> enemies)
     {
-        this.x = startX;
-        this.y = startY;
+        this.x = x;
+        this.y = y;
         this.enemies=enemies;
         loadSprites();
         initHitbox();
@@ -105,10 +114,6 @@ public class Nyx {
         }
     }
 
-    private void initHitbox() {
-        hitbox = new Rectangle(x * TILE_SIZE + HITBOX_OFFSET_X, y * TILE_SIZE + HITBOX_OFFSET_Y, HITBOX_WIDTH, HITBOX_HEIGHT);
-    }
-
     private void startAnimation() {
         animationTimer = new Timer(120, e -> {
 
@@ -116,7 +121,7 @@ public class Nyx {
                 if (currentDeathFrame < DEATH_FRAMES - 1) {
                     currentDeathFrame++;
                 }
-                repaintCallback.run(); // dacă e în Timer
+                repaintCallback.run();
                 return;
             }
 
@@ -223,7 +228,12 @@ public class Nyx {
         }
 
         g2d.setColor(Color.GREEN);
-        g2d.draw(hitbox);
+        g2d.draw(getHitbox());
+
+        g2d.setColor(Color.BLUE);
+        int futurePixelX = (x + dx) * TILE_SIZE + HITBOX_OFFSET_X;
+        int futurePixelY = (y + dy) * TILE_SIZE + HITBOX_OFFSET_Y;
+        g2d.drawRect(futurePixelX, futurePixelY, HITBOX_WIDTH, HITBOX_HEIGHT);
 
         if (state == STATE_ATTACK) {
             g2d.setColor(Color.BLUE);
@@ -232,6 +242,7 @@ public class Nyx {
     }
 
     public void handleKeyPressed(KeyEvent e) {
+        if (isDying) return;
         switch (e.getKeyChar()) {
             case 'w' -> wPressed = true;
             case 'a' -> { aPressed = true; facingRight = false; }
@@ -246,6 +257,7 @@ public class Nyx {
     }
 
     public void handleKeyReleased(KeyEvent e) {
+        if (isDying) return;
         switch (e.getKeyChar()) {
             case 'w' -> wPressed = false;
             case 'a' -> aPressed = false;
@@ -275,23 +287,61 @@ public class Nyx {
     }
 
     public void takeDamage() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastHitTime < invulnTime)
+            return;
         if (isDying) return;
-
         health--;
         System.out.println("Nyx a fost lovit! HP ramas: " + health);
 
-        if (health <= 0) {
+        if (health < 0) {
+            health = 0;
             isDying = true;
             currentDeathFrame = 0;
             System.out.println("Nyx a murit!");
         }
+        lastHitTime = currentTime;
     }
+
+//    public void takeDamage() {
+//        System.out.println("NYX TOOK DAMAGE!");
+//        System.out.println("HP rămas: " + health);
+//        long currentTime = System.currentTimeMillis();
+//        if (currentTime - lastHitTime < invulnTime)
+//          return;
+//
+//        if (health > 0) {
+//            health--;
+//        }
+//
+//        lastHitTime = currentTime;
+//    }
+
+    public void increaseHealth(int amount) {
+        health += amount;
+        if (health > maxHealth) {
+            health = maxHealth;
+        }
+    }
+
     public boolean isNyxDead() {
         return isDying && currentDeathFrame >= DEATH_FRAMES - 1;
     }
 
+    private void initHitbox() {
+        hitbox = new Rectangle(x * TILE_SIZE + HITBOX_OFFSET_X, y * TILE_SIZE + HITBOX_OFFSET_Y, HITBOX_WIDTH, HITBOX_HEIGHT);
+    }
+
+    public void updateHitbox(int TILE_SIZE) {
+        hitbox.setLocation(x * TILE_SIZE + HITBOX_OFFSET_X, y * TILE_SIZE + HITBOX_OFFSET_Y);
+    }
+
     public Rectangle getHitbox() {
-        return hitbox;
+        return new Rectangle(
+                x * TILE_SIZE + HITBOX_OFFSET_X,
+                y * TILE_SIZE + HITBOX_OFFSET_Y,
+                HITBOX_WIDTH, HITBOX_HEIGHT
+        );
     }
 
     public int getX() {
@@ -302,9 +352,24 @@ public class Nyx {
         return y;
     }
 
+    public int getHealth() {
+        return health;
+    }
+
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    public void resetHealth() {
+        health = maxHealth;
+    }
 
     public void update(int[][] layer1, int[][] layer2, List<Enemy> enemies) {
-        int dx = 0, dy = 0;
+        dx = 0;
+        dy = 0;
+        if (isDying) {
+            return;
+        }
         if (wPressed) dy = -1;
         if (sPressed) dy = 1;
         if (aPressed) dx = -1;
@@ -321,6 +386,8 @@ public class Nyx {
 
         for (Enemy enemy : enemies) {
             if (!enemy.isDead() && futureHitbox.intersects(enemy.getHitbox())) {
+                System.out.println("COLIZIUNE DETECTATA");
+                takeDamage();
                 return;
             }
         }
@@ -334,7 +401,7 @@ public class Nyx {
             if (baseWalkable) {
                 x = newX;
                 y = newY;
-                hitbox.setLocation(x * TILE_SIZE + HITBOX_OFFSET_X, y * TILE_SIZE + HITBOX_OFFSET_Y);
+                updateHitbox(TILE_SIZE);
             }
         }
     }

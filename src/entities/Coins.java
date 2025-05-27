@@ -1,14 +1,16 @@
+package entities;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class Collectible {
+public class Coins {
     private static final int TILE_SIZE = 32;
     private int x, y;
     private boolean collected;
     private final int points = 10;
     private BufferedImage sprite;
 
-    public Collectible(int x, int y, BufferedImage sprite) {
+    public Coins(int x, int y, BufferedImage sprite) {
         this.x = x;
         this.y = y;
         this.sprite = sprite;

@@ -1,7 +1,9 @@
+package main;
+
 import javax.swing.*;
 import java.awt.*;
 
-class FadePanel extends JPanel {
+public class FadePanel extends JPanel {
     private float opacity = 0f;
 
     public void setOpacity(float value) {

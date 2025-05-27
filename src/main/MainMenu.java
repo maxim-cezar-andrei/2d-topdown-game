@@ -1,12 +1,19 @@
+package main;
+
+import map.GameMap;
+import map.GameMap1;
+import map.GameMap2;
+import map.GameMap3;
+import ui.GameFrame;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.util.List;
 
-class MainMenu extends JFrame {
+public class MainMenu extends JFrame {
     private FadePanel overlay;
     private Font customFont;
 

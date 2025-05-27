@@ -1,3 +1,8 @@
+package main;
+
+import entities.Enemy;
+import entities.Nyx;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

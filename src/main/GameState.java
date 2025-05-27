@@ -1,3 +1,8 @@
+package main;
+
+import entities.Enemy;
+import entities.Nyx;
+
 import java.util.List;
 
 public class GameState {

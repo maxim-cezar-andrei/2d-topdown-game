@@ -1,3 +1,13 @@
+package map;
+
+import entities.Coins;
+import entities.Enemy;
+import entities.Nyx;
+import main.DataBaseManager;
+import main.GameState;
+import main.MainMenu;
+import ui.PauseMenuPanel;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -9,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-class GameMap3 extends JPanel implements KeyListener {
+public class GameMap3 extends JPanel implements KeyListener {
     private final int TILE_SIZE = 32;
     private final int TILES_PER_ROW = 74;
     private Image tileset;
@@ -35,9 +45,9 @@ class GameMap3 extends JPanel implements KeyListener {
     private List<Enemy> enemies = new ArrayList<>();
     private int mapId = 3;
 
-    private Collectible finalChip;
+    private Coins finalChip;
     private BufferedImage finalChipSprite;
-    private List<Collectible> collectibles = new ArrayList<>();
+    private List<Coins> collectibles = new ArrayList<>();
     private BufferedImage chipSprite;
     private int score = 0;
     private int totalScore = 0;
@@ -65,16 +75,16 @@ class GameMap3 extends JPanel implements KeyListener {
 
         try {
             finalChipSprite = ImageIO.read(new File("assets/sprites/Collectibles/final_chip_32x32.png"));
-            finalChip = new Collectible(12, 6, finalChipSprite);
+            finalChip = new Coins(12, 6, finalChipSprite);
             collectibles.add(finalChip);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         // Poziții exemplu (adaptează coordonatele după hartă)
-        collectibles.add(new Collectible(10, 5, chipSprite));
-        collectibles.add(new Collectible(15, 8, chipSprite));
-        collectibles.add(new Collectible(20, 12, chipSprite));
+        collectibles.add(new Coins(10, 5, chipSprite));
+        collectibles.add(new Coins(15, 8, chipSprite));
+        collectibles.add(new Coins(20, 12, chipSprite));
 
         DataBaseManager db2 = new DataBaseManager();
         totalScore = db2.getTotalScore();
@@ -184,7 +194,7 @@ class GameMap3 extends JPanel implements KeyListener {
                     pauseMenu.setVisible(false);
                     requestFocusInWindow();
                 },
-                // Main Menu
+                // main.Main Menu
                 () -> {
                     parentFrame.dispose();
                     new MainMenu();
@@ -234,7 +244,7 @@ class GameMap3 extends JPanel implements KeyListener {
             nyx.update(layer1, layer1, enemies);
 
             Rectangle nyxHitbox = nyx.getHitbox();
-            for (Collectible c : collectibles) {
+            for (Coins c : collectibles) {
                 if (!c.isCollected() && c.checkCollision(nyxHitbox)) {
                     score += c.getPoints();
                     if (c == finalChip) {
@@ -333,7 +343,7 @@ class GameMap3 extends JPanel implements KeyListener {
 
         drawLayer(g2d, layer1);
 
-        for (Collectible c : collectibles) {
+        for (Coins c : collectibles) {
             c.draw(g2d);
             if (!c.isCollected()) {
                 g2d.setColor(Color.YELLOW);

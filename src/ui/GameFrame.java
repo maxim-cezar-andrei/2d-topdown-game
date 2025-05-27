@@ -1,7 +1,11 @@
-import javax.swing.*;
-import java.awt.*;
+package ui;
 
-class GameFrame extends JFrame {
+import main.FadePanel;
+import map.GameMap;
+
+import javax.swing.*;
+
+public class GameFrame extends JFrame {
     public GameFrame(boolean withFadeIn) {
         setTitle("Shadow Heist - Map");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
