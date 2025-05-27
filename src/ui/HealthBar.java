@@ -14,6 +14,8 @@ public class HealthBar {
     private int frameHeight;
     private int frameWidth;
 
+    private int health;
+
     public HealthBar() {
         try {
             spriteSheet = ImageIO.read(Objects.requireNonNull(
@@ -28,8 +30,13 @@ public class HealthBar {
         }
     }
 
+    public void setHealth(int newHealth) {
+        this.health = newHealth;
+    }
+
+
     public void draw(Graphics2D g2d, Nyx nyx, int x, int y) {
-        int hp = Math.max(0, Math.min(3, nyx.getMaxHealth() - nyx.getHealth())); // între 0 și 3
+        int hp = Math.max(0, Math.min(3, nyx.getMaxHealth() - nyx.getHealth()));
 
         BufferedImage frame = spriteSheet.getSubimage(
                 0,

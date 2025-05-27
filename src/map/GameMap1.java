@@ -16,6 +16,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -56,7 +57,6 @@ public class GameMap1 extends JPanel implements KeyListener {
     private HealthBar healthBar = new HealthBar();
 
 
-
     public GameMap1(JFrame parentFrame) {
         this.parentFrame = parentFrame;
 
@@ -83,6 +83,9 @@ public class GameMap1 extends JPanel implements KeyListener {
 
         healthItems.add(new HealthItem(10, 4));
         healthItems.add(new HealthItem(15, 9));
+        healthItems.add(new HealthItem(12, 9));
+        healthItems.add(new HealthItem(13, 5));
+        healthItems.add(new HealthItem(17, 8));
 
         DataBaseManager db2 = new DataBaseManager();
         db2.resetTotalScore();
@@ -148,15 +151,6 @@ public class GameMap1 extends JPanel implements KeyListener {
                 pauseMenu.setBounds(0, 0, getWidth(), getHeight());
             }
         });
-
-//        new Timer(120, e -> {
-//            nyx.update(layer1, layer1, enemies);
-//            int nyxX = nyx.getX();
-//            int nyxY = nyx.getY();
-//            showReturnMessage = (nyxX == RETURN_TRIGGER_X && nyxY == RETURN_TRIGGER_Y);
-//            for (entities.Enemy enemy : enemies) enemy.updateAnimation();
-//            repaint();
-//        }).start();
         startAnimationTimer();
     }
 
@@ -248,23 +242,6 @@ public class GameMap1 extends JPanel implements KeyListener {
 
     private void startAnimationTimer() {
         new Timer(120, e -> {
-//            nyx.update(layer1, layer1, enemies);
-//
-//            Rectangle nyxHitbox = nyx.getHitbox();
-//            for (Collectible c : coins) {
-//                if (!c.isCollected() && c.checkCollision(nyxHitbox)) {
-//                    score += c.getPoints();
-//                }
-//            }
-//
-//            int nyxX = nyx.getX();
-//            int nyxY = nyx.getY();
-//
-//            showNextLevelMessage = (nyxX == 2 && nyxY == 2);
-//
-//            for (entities.Enemy enemy : enemies) {
-//                enemy.updateAnimation();
-//            }
             update();
             repaint();
         }).start();
@@ -291,7 +268,16 @@ public class GameMap1 extends JPanel implements KeyListener {
     public void update() {
         nyx.update(layer1, layer1, enemies);
 
-        //Rectangle nyxHitbox = nyx.getHitbox();
+        Iterator<HealthItem> iterator = healthItems.iterator();
+        while (iterator.hasNext()) {
+            HealthItem item = iterator.next();
+            if (nyx.getHitbox().intersects(item.getHitbox())) {
+                nyx.heal();            // Vindecă Nyx
+                healthBar.setHealth(nyx.getHealth()); // Actualizează HealthBar (dacă ai getter)
+                iterator.remove();      // Elimină orb-ul
+            }
+        }
+
         for (Coins c : coins) {
             if (!c.isCollected() && c.checkCollision(nyx.getHitbox())) {
                 score += c.getPoints();
@@ -301,7 +287,7 @@ public class GameMap1 extends JPanel implements KeyListener {
         for (HealthItem item : healthItems) {
             if (!item.isCollected() && nyx.getHitbox().intersects(item.getHitbox())) {
                 item.collect();
-                nyx.increaseHealth(1);
+                nyx.heal();
             }
         }
 

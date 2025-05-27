@@ -32,7 +32,6 @@ public class HealthItem {
         return hitbox.intersects(nyxHitbox);
     }
 
-
     public Rectangle getHitbox() {
         return hitbox;
     }

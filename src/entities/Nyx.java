@@ -303,24 +303,12 @@ public class Nyx {
         lastHitTime = currentTime;
     }
 
-//    public void takeDamage() {
-//        System.out.println("NYX TOOK DAMAGE!");
-//        System.out.println("HP rămas: " + health);
-//        long currentTime = System.currentTimeMillis();
-//        if (currentTime - lastHitTime < invulnTime)
-//          return;
-//
-//        if (health > 0) {
-//            health--;
-//        }
-//
-//        lastHitTime = currentTime;
-//    }
-
-    public void increaseHealth(int amount) {
-        health += amount;
-        if (health > maxHealth) {
-            health = maxHealth;
+    public void heal() {
+        if (!isDying) {
+            health++;
+            if (health > maxHealth)
+                health = maxHealth;
+            System.out.println("Nyx s-a vindecat! Viata: " + health);
         }
     }
 
