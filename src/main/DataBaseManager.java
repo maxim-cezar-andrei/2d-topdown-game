@@ -29,7 +29,8 @@ public class DataBaseManager {
                 nyx_x INTEGER,
                 nyx_y INTEGER,
                 map_id INTEGER,
-                score INTEGER
+                score INTEGER,
+                health INTEGER
             );
         """;
 
@@ -50,14 +51,15 @@ public class DataBaseManager {
         }
     }
 
-    public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId, int score) {
+    public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId, int score, int health) {
         try {
-            String insertGame = "INSERT INTO game_state(nyx_x, nyx_y, map_id, score) VALUES (?, ?, ?, ?)";
+            String insertGame = "INSERT INTO game_state(nyx_x, nyx_y, map_id, score, health) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement ps = conn.prepareStatement(insertGame, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, nyx.getX());
                 ps.setInt(2, nyx.getY());
                 ps.setInt(3, mapId);
                 ps.setInt(4, score);
+                ps.setInt(5, nyx.getHealth());
                 ps.executeUpdate();
 
                 ResultSet rs = ps.getGeneratedKeys();
@@ -82,7 +84,7 @@ public class DataBaseManager {
 
     // Supraincarcare pentru cazurile în care nu dorim să salvăm scorul
     public void saveGame(Nyx nyx, List<Enemy> enemies, int mapId) {
-        saveGame(nyx, enemies, mapId, 0); // scor implicit: 0
+        saveGame(nyx, enemies, mapId, 0, 0); // scor implicit: 0
     }
 
 
@@ -95,6 +97,7 @@ public class DataBaseManager {
                     int nyxX = rs.getInt("nyx_x");
                     int nyxY = rs.getInt("nyx_y");
                     int mapId = rs.getInt("map_id");
+                    int health = rs.getInt("health");
 
                     List<Enemy> enemies = new ArrayList<>();
                     String selectEnemies = "SELECT * FROM enemies WHERE game_id = ?";
@@ -113,6 +116,7 @@ public class DataBaseManager {
                     }
 
                     Nyx nyx = new Nyx(nyxX, nyxY, enemies);
+                    nyx.setHealth(health);
                     return new GameState(nyx, enemies, mapId);
                 }
             }

@@ -53,7 +53,6 @@ public class GameMap1 extends JPanel implements KeyListener {
     private int totalScore = 0;
 
     private List<HealthItem> healthItems = new ArrayList<>();
-
     private HealthBar healthBar = new HealthBar();
 
 
@@ -114,7 +113,7 @@ public class GameMap1 extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId, score);
+                    db.saveGame(nyx, enemies, mapId, score, nyx.getHealth());
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -203,7 +202,7 @@ public class GameMap1 extends JPanel implements KeyListener {
                 // Save
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId, score);
+                    db.saveGame(nyx, enemies, mapId, score, nyx.getHealth());
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -384,9 +383,9 @@ public class GameMap1 extends JPanel implements KeyListener {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 20));
         g.drawString("Score: " + score, 20, 30);
-        g.drawString("Total: " + totalScore, cameraX + 20, cameraY + 50);
+        g.drawString("Total: " + totalScore, 20, 50);
 
-        healthBar.draw(g2d, nyx, 120,20);
+        healthBar.draw(g2d, nyx, cameraX+120,cameraY+20);
 
 
         g2d.dispose();
@@ -408,7 +407,7 @@ public class GameMap1 extends JPanel implements KeyListener {
 
         if (e.getKeyChar() == 'e' && showNextLevelMessage) {
             DataBaseManager db = new DataBaseManager();
-            db.saveGame(nyx, enemies, mapId, score);
+            db.saveGame(nyx, enemies, mapId, score, nyx.getHealth());
             db.close();
 
             GameMap2 nextMap = new GameMap2(parentFrame);

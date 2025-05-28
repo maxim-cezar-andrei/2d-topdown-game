@@ -340,6 +340,10 @@ public class Nyx {
         return y;
     }
 
+    public void setHealth(int health) {
+        this.health = Math.max(0, Math.min(health, maxHealth));
+    }
+
     public int getHealth() {
         return health;
     }

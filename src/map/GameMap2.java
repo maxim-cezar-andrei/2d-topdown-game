@@ -2,10 +2,12 @@ package map;
 
 import entities.Coins;
 import entities.Enemy;
+import entities.HealthItem;
 import entities.Nyx;
 import main.DataBaseManager;
 import main.GameState;
 import main.MainMenu;
+import ui.HealthBar;
 import ui.PauseMenuPanel;
 
 import javax.swing.*;
@@ -14,6 +16,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -43,10 +46,13 @@ public class GameMap2 extends JPanel implements KeyListener {
     private List<Enemy> enemies = new ArrayList<>();
     private int mapId = 2;
 
-    private List<Coins> collectibles = new ArrayList<>();
+    private List<Coins> coins = new ArrayList<>();
     private BufferedImage chipSprite;
     private int score = 0;
     private int totalScore = 0;
+
+    private List<HealthItem> healthItems = new ArrayList<>();
+    private HealthBar healthBar = new HealthBar();
 
 
     public GameMap2(JFrame parentFrame) {
@@ -74,9 +80,15 @@ public class GameMap2 extends JPanel implements KeyListener {
         }
 
         // Poziții exemplu (adaptează coordonatele după hartă)
-        collectibles.add(new Coins(10, 5, chipSprite));
-        collectibles.add(new Coins(15, 8, chipSprite));
-        collectibles.add(new Coins(20, 12, chipSprite));
+        coins.add(new Coins(10, 5, chipSprite));
+        coins.add(new Coins(15, 8, chipSprite));
+        coins.add(new Coins(20, 12, chipSprite));
+
+        healthItems.add(new HealthItem(10, 4));
+        healthItems.add(new HealthItem(15, 9));
+        healthItems.add(new HealthItem(12, 9));
+        healthItems.add(new HealthItem(13, 5));
+        healthItems.add(new HealthItem(17, 8));
 
         DataBaseManager db2 = new DataBaseManager();
         totalScore = db2.getTotalScore();
@@ -104,7 +116,7 @@ public class GameMap2 extends JPanel implements KeyListener {
                 () -> { parentFrame.dispose(); new MainMenu(); },
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId, score);
+                    db.saveGame(nyx, enemies, mapId, score, nyx.getHealth());
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -193,7 +205,7 @@ public class GameMap2 extends JPanel implements KeyListener {
                 // Save
                 () -> {
                     DataBaseManager db = new DataBaseManager();
-                    db.saveGame(nyx, enemies, mapId, score);
+                    db.saveGame(nyx, enemies, mapId, score, nyx.getHealth());
                     db.close();
                     JOptionPane.showMessageDialog(this, "Game saved!");
                     pauseMenu.requestFocusInWindow();
@@ -232,24 +244,24 @@ public class GameMap2 extends JPanel implements KeyListener {
 
     private void startAnimationTimer() {
         new Timer(120, e -> {
-            nyx.update(layer1, layer1, enemies);
-
-            Rectangle nyxHitbox = nyx.getHitbox();
-            for (Coins c : collectibles) {
-                if (!c.isCollected() && c.checkCollision(nyxHitbox)) {
-                    score += c.getPoints();
-                }
-            }
-
-            int nyxX = nyx.getX();
-            int nyxY = nyx.getY();
-
-            showNextLevelMessage = (nyxX == 2 && nyxY == 2);
-
-            for (Enemy enemy : enemies) {
-                enemy.updateAnimation();
-            }
-
+//            nyx.update(layer1, layer1, enemies);
+//
+//            Rectangle nyxHitbox = nyx.getHitbox();
+//            for (Coins c : collectibles) {
+//                if (!c.isCollected() && c.checkCollision(nyxHitbox)) {
+//                    score += c.getPoints();
+//                }
+//            }
+//
+//            int nyxX = nyx.getX();
+//            int nyxY = nyx.getY();
+//
+//            showNextLevelMessage = (nyxX == 2 && nyxY == 2);
+//
+//            for (Enemy enemy : enemies) {
+//                enemy.updateAnimation();
+//            }
+            update();
             repaint();
         }).start();
     }
@@ -270,6 +282,41 @@ public class GameMap2 extends JPanel implements KeyListener {
             e.printStackTrace();
         }
         return rows.toArray(new int[0][0]);
+    }
+
+    public void update() {
+        nyx.update(layer1, layer1, enemies);
+
+        Iterator<HealthItem> iterator = healthItems.iterator();
+        while (iterator.hasNext()) {
+            HealthItem item = iterator.next();
+            if (nyx.getHitbox().intersects(item.getHitbox())) {
+                nyx.heal();            // Vindecă Nyx
+                healthBar.setHealth(nyx.getHealth()); // Actualizează HealthBar (dacă ai getter)
+                iterator.remove();      // Elimină orb-ul
+            }
+        }
+
+        for (Coins c : coins) {
+            if (!c.isCollected() && c.checkCollision(nyx.getHitbox())) {
+                score += c.getPoints();
+            }
+        }
+
+        for (HealthItem item : healthItems) {
+            if (!item.isCollected() && nyx.getHitbox().intersects(item.getHitbox())) {
+                item.collect();
+                nyx.heal();
+            }
+        }
+
+        int nyxX = nyx.getX();
+        int nyxY = nyx.getY();
+        showNextLevelMessage = (nyxX == 2 && nyxY == 2);
+
+        for (Enemy enemy : enemies) {
+            enemy.updateAnimation(); // păstrezi animația
+        }
     }
 
     private void drawLayer(Graphics g, int[][] layer) {
@@ -318,7 +365,7 @@ public class GameMap2 extends JPanel implements KeyListener {
 
         drawLayer(g2d, layer1);
 
-        for (Coins c : collectibles) {
+        for (Coins c : coins) {
             c.draw(g2d);
             if (!c.isCollected()) {
                 g2d.setColor(Color.YELLOW);
@@ -333,6 +380,10 @@ public class GameMap2 extends JPanel implements KeyListener {
             if (nyx.getHitbox().intersects(enemy.getHitbox())) {
                 System.out.println("Coliziune cu inamicul!");
             }
+        }
+
+        for (HealthItem item : healthItems) {
+            item.draw(g2d);
         }
 
         if (showReturnMessage) {
@@ -350,7 +401,9 @@ public class GameMap2 extends JPanel implements KeyListener {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 20));
         g.drawString("Score: " + score, 20, 30);
-        g.drawString("Total: " + totalScore, cameraX + 20, cameraY + 50);
+        g.drawString("Total: " + totalScore, 20, 50);
+
+        healthBar.draw(g2d, nyx, cameraX+120,cameraY+20);
 
         g2d.dispose();
     }
@@ -371,7 +424,7 @@ public class GameMap2 extends JPanel implements KeyListener {
 
         if (e.getKeyChar() == 'e' && showNextLevelMessage) {
             DataBaseManager db = new DataBaseManager();
-            db.saveGame(nyx, enemies, mapId, score);
+            db.saveGame(nyx, enemies, mapId, score, nyx.getHealth());
             db.close();
 
             GameMap3 nextMap = new GameMap3(parentFrame);
