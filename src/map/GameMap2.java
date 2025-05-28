@@ -314,9 +314,22 @@ public class GameMap2 extends JPanel implements KeyListener {
         int nyxY = nyx.getY();
         showNextLevelMessage = (nyxX == 2 && nyxY == 2);
 
-        for (Enemy enemy : enemies) {
-            enemy.updateAnimation(); // păstrezi animația
+        if (!nyx.isNyxDead()) {
+            for (Enemy enemy : enemies) {
+                enemy.Proximity(nyx.getX(), nyx.getY());
+                if (!enemy.isDead() && enemy.isNear(nyx.getX(), nyx.getY())) {
+                    if (enemy.canAttack()) {
+                        nyx.takeDamage();           // se ocupă singur de cooldown
+                        enemy.startAttack();        // animatie vizuală
+                        enemy.resetAttackCooldown(); // cooldown pentru inamic (opțional)
+                    }
+                }
+                enemy.updateDirection(nyx.getX());
+                enemy.updateAnimation();
+            }
         }
+
+        repaint();
     }
 
     private void drawLayer(Graphics g, int[][] layer) {
