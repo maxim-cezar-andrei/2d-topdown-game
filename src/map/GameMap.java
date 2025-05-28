@@ -59,9 +59,10 @@ public class GameMap extends JPanel implements KeyListener {
         nyx.setRepaintCallback(this::repaint);
 
 
-        enemies.add(new Enemy(8, 8));
-        enemies.add(new Enemy(6, 9));
-        enemies.add(new Enemy(5, 10));
+        enemies.add(new Enemy(22, 5));
+        enemies.add(new Enemy(2, 9));
+        enemies.add(new Enemy(10, 16));
+
 
 
         setLayout(null);

@@ -379,7 +379,7 @@ public class Nyx {
         for (Enemy enemy : enemies) {
             if (!enemy.isDead() && futureHitbox.intersects(enemy.getHitbox())) {
                 System.out.println("COLIZIUNE DETECTATA");
-                takeDamage();
+
                 return;
             }
         }

@@ -11,14 +11,13 @@ import ui.HealthBar;
 import ui.PauseMenuPanel;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
-import java.util.Scanner;
 
 
 public class GameMap1 extends JPanel implements KeyListener {
@@ -60,10 +59,9 @@ public class GameMap1 extends JPanel implements KeyListener {
         this.parentFrame = parentFrame;
 
         tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
-        layer1 = loadCSV("assets/maps/nivel1.csv");
+        layer1 = loadCSV("assets/maps/nivel3.csv");
 
-        enemies.add(new Enemy(5, 5));
-        enemies.add(new Enemy(10, 8));
+
 
         nyx = new Nyx(1, 1, enemies);
         nyx.setWalkableTiles(List.of(1567));
@@ -75,16 +73,15 @@ public class GameMap1 extends JPanel implements KeyListener {
             e.printStackTrace();
         }
 
-        // Poziții exemplu (adaptează coordonatele după hartă)
-        coins.add(new Coins(10, 5, chipSprite));
-        coins.add(new Coins(15, 8, chipSprite));
-        coins.add(new Coins(20, 12, chipSprite));
+        //Inamici
+        generateRandomEnemies(15);
 
-        healthItems.add(new HealthItem(10, 4));
-        healthItems.add(new HealthItem(15, 9));
-        healthItems.add(new HealthItem(12, 9));
-        healthItems.add(new HealthItem(13, 5));
-        healthItems.add(new HealthItem(17, 8));
+        //HealthItem
+        generateRandomHealthItems(20);
+
+        // Coins
+        generateRandomCoins( 30);
+
 
         DataBaseManager db2 = new DataBaseManager();
         db2.resetTotalScore();
@@ -165,7 +162,7 @@ public class GameMap1 extends JPanel implements KeyListener {
         db2.close();
 
         this.tileset = new ImageIcon("assets/tiles/tileset x2.png").getImage();
-        this.layer1 = loadCSV("assets/maps/nivel1.csv");
+        this.layer1 = loadCSV("assets/maps/nivel3.csv");
 
         nyx.setWalkableTiles(List.of(1567));
         nyx.setRepaintCallback(this::repaint);
@@ -239,6 +236,7 @@ public class GameMap1 extends JPanel implements KeyListener {
         });
     }
 
+
     private void startAnimationTimer() {
         new Timer(120, e -> {
             update();
@@ -277,6 +275,7 @@ public class GameMap1 extends JPanel implements KeyListener {
             }
         }
 
+
         for (Coins c : coins) {
             if (!c.isCollected() && c.checkCollision(nyx.getHitbox())) {
                 score += c.getPoints();
@@ -309,7 +308,128 @@ public class GameMap1 extends JPanel implements KeyListener {
             }
         }
 
+
         repaint();
+    }
+    private void generateRandomEnemies(int count) {
+        Random random = new Random();
+        int tileSize = TILE_SIZE; // Folosește constanta existentă
+        int mapWidth = layer1[0].length;
+        int mapHeight = layer1.length;
+
+        System.out.println("Generating enemies on map size: " + mapWidth + "x" + mapHeight);
+
+        int generated = 0;
+        int attempts = 0;
+        int maxAttempts = count * 10; // Limităm numărul de încercări
+
+        while (generated < count && attempts < maxAttempts) {
+            int tileX = random.nextInt(mapWidth);
+            int tileY = random.nextInt(mapHeight);
+
+            if (layer1[tileY][tileX] == 1567) { // Verifică dacă e tile walkable
+
+                enemies.add(new Enemy(tileX, tileY));
+                generated++;
+            }
+            attempts++;
+        }
+
+        System.out.println("Generated " + generated + " enemies");
+        if (generated < count) {
+            System.out.println("Warning: Could only place " + generated + " out of " + count + " enemies");
+        }
+    }
+    private void generateRandomHealthItems(int count) {
+        Random random = new Random();
+        int tileSize = TILE_SIZE;
+        int mapWidth = layer1[0].length;
+        int mapHeight = layer1.length;
+
+        int generated = 0;
+        int maxAttempts = count * 10;
+
+        while (generated < count && maxAttempts > 0) {
+            int tileX = random.nextInt(mapWidth);
+            int tileY = random.nextInt(mapHeight);
+
+            if (layer1[tileY][tileX] == 1567 && isPositionSafe(tileX, tileY, 3)) {
+                healthItems.add(new HealthItem(tileX, tileY));
+                generated++;
+                System.out.println("HealthItem generat la: (" + tileX + ", " + tileY + ")");
+            }
+
+            maxAttempts--;
+        }
+
+        System.out.println("Au fost generate " + generated + " iteme de viață");
+    }
+
+    private void generateRandomCoins(int count) {
+        Random random = new Random();
+        int tileSize = TILE_SIZE;
+        int mapWidth = layer1[0].length;
+        int mapHeight = layer1.length;
+
+        int generated = 0;
+        int maxAttempts = count * 10;
+
+        while (generated < count && maxAttempts > 0) {
+            int tileX = random.nextInt(mapWidth);
+            int tileY = random.nextInt(mapHeight);
+
+            if (layer1[tileY][tileX] == 1567 && !isCoinPositionOccupied(tileX, tileY)) {
+                coins.add(new Coins(tileX, tileY, chipSprite));
+                generated++;
+                System.out.println("Coin generat la: (" + tileX + ", " + tileY + ")");
+            }
+
+            maxAttempts--;
+        }
+
+        System.out.println("Au fost generate " + generated + " monede.");
+    }
+    private boolean isCoinPositionOccupied(int tileX, int tileY) {
+        for (Coins c : coins) {
+            if (c.getX() == tileX && c.getY() == tileY) {
+                return true;
+            }
+        }
+        return false;
+    }
+    private boolean isPositionSafe(int tileX, int tileY, int minDistance) {
+        // Distanță față de Nyx
+        if (Math.abs(tileX - nyx.getX()/TILE_SIZE) < minDistance ||
+                Math.abs(tileY - nyx.getY()/TILE_SIZE) < minDistance) {
+            return false;
+        }
+
+        // Distanță față de inamici
+        for (Enemy enemy : enemies) {
+            if (Math.abs(tileX - enemy.getX()/TILE_SIZE) < minDistance ||
+                    Math.abs(tileY - enemy.getY()/TILE_SIZE) < minDistance) {
+                return false;
+            }
+        }
+
+        // Distanță față de alte health items
+        for (HealthItem item : healthItems) {
+            if (Math.abs(tileX - item.getHitbox().x/TILE_SIZE) < minDistance ||
+                    Math.abs(tileY - item.getHitbox().y/TILE_SIZE) < minDistance) {
+                return false;
+            }
+        }
+
+        return !isPositionOccupied(tileX, tileY); // Poziția trebuie să fie liberă
+    }
+    private boolean isPositionOccupied(int tileX, int tileY) {
+        for (HealthItem item : healthItems) {
+            if (item.getHitbox().x / TILE_SIZE == tileX &&
+                    item.getHitbox().y / TILE_SIZE == tileY) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void drawLayer(Graphics g, int[][] layer) {

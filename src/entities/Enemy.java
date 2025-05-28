@@ -208,6 +208,7 @@ public class Enemy {
         deathCurrentFrame = 0;
     }
 
+
     public int getX()
     {
         return x;
