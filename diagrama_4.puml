@@ -1,0 +1,206 @@
+@startuml
+class map.GameMap3 {
+- int TILE_SIZE
+- int TILES_PER_ROW
+- Image tileset
+- JFrame parentFrame
+- PauseMenuPanel pauseMenu
+- boolean menuVisible
+- int[][] layer1
+- int cameraX
+- int cameraY
+- int RETURN_TRIGGER_X
+- int RETURN_TRIGGER_Y
+- boolean showReturnMessage
+- int LEVEL3_TRIGGER_X
+- int LEVEL3_TRIGGER_Y
+- boolean showLevel3Message
+- Nyx nyx
+- List<Enemy> enemies
+- int mapId
+- Coins finalChip
+- BufferedImage finalChipSprite
+- List<Coins> coins
+- BufferedImage chipSprite
+- int score
+- int totalScore
+- List<HealthItem> healthItems
+- HealthBar healthBar
+- void initPauseMenu()
+- void startAnimationTimer()
+- int[][] loadCSV(String)
+- void endGame()
++ void update()
+- void generateRandomEnemies(int)
+- void generateRandomCoins(int)
+- boolean isCoinPositionOccupied(int,int)
+- void generateRandomHealthItems(int)
+- boolean isPositionSafe(int,int,int)
+- boolean isPositionOccupied(int,int)
+- void drawLayer(Graphics,int[][])
+- void updateCamera()
+# void paintComponent(Graphics)
++ void keyTyped(KeyEvent)
++ void keyPressed(KeyEvent)
++ void keyReleased(KeyEvent)
++ Dimension getPreferredSize()
+}
+
+
+class map.GameMap {
+- int TILE_SIZE
+- int TILES_PER_ROW
+- Image tileset
+- JFrame parentFrame
+- PauseMenuPanel pauseMenu
+- boolean menuVisible
+- int[][] layer1
+- int[][] layer2
+- int cameraX
+- int cameraY
+- int LEVEL1_TRIGGER_X
+- int LEVEL1_TRIGGER_Y
+- boolean showLevel1Message
+- int LEVEL2_TRIGGER_X
+- int LEVEL2_TRIGGER_Y
+- boolean showLevel2Message
+- int LEVEL3_TRIGGER_X
+- int LEVEL3_TRIGGER_Y
+- boolean showLevel3Message
+- Nyx nyx
+- List<Enemy> enemies
+- int mapId
+- void initPauseMenu()
+- void startAnimationTimer()
+- int[][] loadCSV(String)
+- void drawLayer(Graphics,int[][])
+- void updateCamera()
+# void paintComponent(Graphics)
++ void keyTyped(KeyEvent)
++ void keyPressed(KeyEvent)
++ void keyReleased(KeyEvent)
++ Dimension getPreferredSize()
+}
+
+
+class ui.GameFrame {
+}
+class ui.PauseMenuPanel {
+- JButton createStyledButton(String,Runnable)
+# void paintComponent(Graphics)
+}
+
+class map.GameMap2 {
+- int TILE_SIZE
+- int TILES_PER_ROW
+- Image tileset
+- JFrame parentFrame
+- PauseMenuPanel pauseMenu
+- boolean menuVisible
+- int[][] layer1
+- int cameraX
+- int cameraY
+- {static} int NEXT_LEVEL_X
+- {static} int NEXT_LEVEL_Y
+- boolean showNextLevelMessage
+- int RETURN_TRIGGER_X
+- int RETURN_TRIGGER_Y
+- boolean showReturnMessage
+- Nyx nyx
+- List<Enemy> enemies
+- int mapId
+- List<Coins> coins
+- BufferedImage chipSprite
+- int score
+- int totalScore
+- List<HealthItem> healthItems
+- HealthBar healthBar
+- void initPauseMenu()
+- void startAnimationTimer()
+- int[][] loadCSV(String)
++ void update()
+- void generateRandomEnemies(int)
+- void generateRandomCoins(int)
+- boolean isCoinPositionOccupied(int,int)
+- void generateRandomHealthItems(int)
+- boolean isPositionSafe(int,int,int)
+- boolean isPositionOccupied(int,int)
+- void drawLayer(Graphics,int[][])
+- void updateCamera()
+# void paintComponent(Graphics)
++ void keyTyped(KeyEvent)
++ void keyPressed(KeyEvent)
++ void keyReleased(KeyEvent)
++ Dimension getPreferredSize()
+}
+
+
+class ui.HealthBar {
+- BufferedImage spriteSheet
+- int SEGMENT_COUNT
+- int frameHeight
+- int frameWidth
+- int health
++ void setHealth(int)
++ void draw(Graphics2D,Nyx,int,int)
+}
+
+
+class map.GameMap1 {
+- int TILE_SIZE
+- int TILES_PER_ROW
+- Image tileset
+- JFrame parentFrame
+- PauseMenuPanel pauseMenu
+- boolean menuVisible
+- int[][] layer1
+- int cameraX
+- int cameraY
+- {static} int NEXT_LEVEL_X
+- {static} int NEXT_LEVEL_Y
+- boolean showNextLevelMessage
+- int RETURN_TRIGGER_X
+- int RETURN_TRIGGER_Y
+- boolean showReturnMessage
+- Nyx nyx
+- List<Enemy> enemies
+- int mapId
+- List<Coins> coins
+- BufferedImage chipSprite
+- int score
+- int totalScore
+- List<HealthItem> healthItems
+- HealthBar healthBar
+- void initPauseMenu()
+- void startAnimationTimer()
+- int[][] loadCSV(String)
++ void update()
+- void generateRandomEnemies(int)
+- void generateRandomHealthItems(int)
+- void generateRandomCoins(int)
+- boolean isCoinPositionOccupied(int,int)
+- boolean isPositionSafe(int,int,int)
+- boolean isPositionOccupied(int,int)
+- void drawLayer(Graphics,int[][])
+- void updateCamera()
+# void paintComponent(Graphics)
++ void keyTyped(KeyEvent)
++ void keyPressed(KeyEvent)
++ void keyReleased(KeyEvent)
++ Dimension getPreferredSize()
+}
+
+
+
+
+map.KeyListener <|.. map.GameMap3
+map.JPanel <|-- map.GameMap3
+map.KeyListener <|.. map.GameMap
+map.JPanel <|-- map.GameMap
+ui.JFrame <|-- ui.GameFrame
+ui.JPanel <|-- ui.PauseMenuPanel
+map.KeyListener <|.. map.GameMap2
+map.JPanel <|-- map.GameMap2
+map.KeyListener <|.. map.GameMap1
+map.JPanel <|-- map.GameMap1
+@enduml

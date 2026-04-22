@@ -47,6 +47,7 @@ public class GameMap extends JPanel implements KeyListener {
     private List<Enemy> enemies = new ArrayList<>();
     private int mapId = 0;
 
+
     public GameMap(JFrame parentFrame) {
         this.parentFrame = parentFrame;
         tileset = new ImageIcon("assets/tiles/void-tiles.png").getImage();
@@ -62,7 +63,6 @@ public class GameMap extends JPanel implements KeyListener {
         enemies.add(new Enemy(22, 5));
         enemies.add(new Enemy(2, 9));
         enemies.add(new Enemy(10, 16));
-
 
 
         setLayout(null);

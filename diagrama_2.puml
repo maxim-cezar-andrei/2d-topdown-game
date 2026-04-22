@@ -1,0 +1,50 @@
+@startuml
+class entities.Enemy {
+- int x
+- Image[] idleFrames
+- int currentFrame
+- int frameCount
+- int frameWidth
+- int frameHeight
+- int spriteSize
+- Rectangle hitbox
+- int TILE_SIZE
+- int HITBOX_WIDTH
+- int HITBOX_HEIGHT
+- int HITBOX_OFFSET_X
+- int HITBOX_OFFSET_Y
+- boolean isDead
+- Image[] deathFrames
+- int deathFrameCount
+- int deathCurrentFrame
+- boolean isAttacking
+- Image[] attackFrames
+- int attackFrameCount
+- int attackCurrentFrame
+- int attackCooldown
+- int ATTACK_COOLDOWN_MAX
+- boolean facingRight
+- boolean nyxInRange
+- int inRangeCounter
+- int ATTACK_DELAY_BEFORE_FIRST_HIT
+- void loadIdleSprites()
++ void draw(Graphics2D,int)
++ void updateAnimation()
++ void Proximity(int,int)
++ void startAttack()
+- Image flipImageHorizontally(Image)
++ void updateDirection(int)
++ boolean isNear(int,int)
++ boolean canAttack()
++ void resetAttackCooldown()
+- void initHitbox()
++ void updateHitbox(int)
++ Rectangle getHitbox()
++ boolean isDead()
++ void die()
++ int getX()
++ int getY()
+}
+
+
+@enduml

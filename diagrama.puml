@@ -1,0 +1,12 @@
+@startuml
+class main.GameState {
+- Nyx nyx
+- List<Enemy> enemies
+- int mapId
++ Nyx getNyx()
++ List<Enemy> getEnemies()
++ int getMapId()
+}
+
+
+@enduml
